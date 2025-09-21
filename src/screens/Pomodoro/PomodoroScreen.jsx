@@ -23,6 +23,7 @@ const PomodoroScreen = () => {
     navigation.navigate('PomodoroGoalCreation');
   };
 
+
   return (
     <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
       <Header title={t('pomodoro.header')} showBackButton={true} />

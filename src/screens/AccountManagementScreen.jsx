@@ -1,13 +1,13 @@
 // src/screens/AccountManagementScreen.jsx
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-
 import Header from '../components/common/Header';
+import Button from '../components/common/Button';
 import { Colors } from '../styles/color';
 import { FontSizes, FontWeights } from '../styles/Fonts';
 
@@ -16,98 +16,95 @@ const AccountManagementScreen = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const handleEditProfile = () => {
-    Alert.alert('회원정보 수정', '회원정보를 수정하는 화면으로 이동합니다.');
-    // navigation.navigate('EditProfileScreen'); // 추후 구현
+  const [name, setName] = useState('오분이');
+
+  // ✨ 수정: 저장 버튼 클릭 시 Alert을 띄운 후, 확인을 누르면 이전 화면으로 돌아갑니다.
+  const handleSave = () => {
+    Alert.alert(
+      t('account.save_confirm_title'), 
+      t('account.save_confirm_message'),
+      [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+    );
   };
 
   const handleLogout = () => {
     Alert.alert(
-      '로그아웃',
-      '정말 로그아웃 하시겠습니까?',
+      t('account.logout_confirm_title'),
+      t('account.logout_confirm_message'),
       [
-        { text: '취소', style: 'cancel' },
-        { text: '확인', onPress: () => {
-            // 로그인 화면으로 돌아가고, 이전 기록을 모두 삭제
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'AuthChoice' }],
-            });
-          } 
-        },
+        { text: t('account.cancel'), style: 'cancel' },
+        { text: t('account.confirm'), onPress: () => navigation.dispatch(StackActions.replace('AuthChoice')), style: 'destructive' },
       ]
     );
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      '회원 탈퇴',
-      '정말 탈퇴하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다.',
+      t('account.delete_confirm_title'),
+      t('account.delete_confirm_message'),
       [
-        { text: '취소', style: 'cancel' },
-        { text: '탈퇴', style: 'destructive', onPress: () => {
-            console.log('회원 탈퇴 처리');
-            // 탈퇴 후 로그인 화면으로 이동
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'AuthChoice' }],
-            });
-          } 
-        },
+        { text: t('account.cancel'), style: 'cancel' },
+        { text: t('account.delete'), onPress: () => navigation.dispatch(StackActions.replace('AuthChoice')), style: 'destructive' },
       ]
     );
   };
 
-  const options = [
-    { id: '1', name: '회원정보 수정', action: handleEditProfile },
-    { id: '2', name: '로그아웃', action: handleLogout },
-    { id: '3', name: '회원탈퇴', action: handleDeleteAccount, textStyle: { color: 'red' } },
-  ];
-
   return (
-    <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
-      <Header title="계정 관리" showBackButton={true} />
-      <ScrollView contentContainerStyle={styles.scrollViewContentContainer}>
-        <View style={styles.listContainer}>
-          {options.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.settingItem} onPress={item.action}>
-              <Text style={[styles.settingItemText, item.textStyle]}>{item.name}</Text>
-              <FontAwesome5 name="chevron-right" size={18} color={Colors.secondaryBrown} />
-            </TouchableOpacity>
-          ))}
-        </View>
+    <View style={[styles.screenContainer, { paddingTop: insets.top }]}>
+      {/* ✨ 수정: 모든 텍스트를 번역 파일(t 함수)에 맞게 수정 */}
+      <Header title={t('account.title')} showBackButton={true} />
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity style={styles.imageContainer}>
+          <Image 
+            source={require('../../assets/images/obooni_default.png')}
+            style={styles.profileImage}
+          />
+          <Text style={styles.imageChangeText}>{t('account.change_image')}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.label}>{t('account.name')}</Text>
+        <TextInput 
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+        />
+
+        <Text style={styles.label}>{t('account.account_info')}</Text>
+        <Text style={styles.infoText}>(카카오톡/페이스북/이메일) 로그인</Text>
+        <Text style={styles.infoText}>skyhan1114@naver.com</Text>
+
+        <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
+          <Text style={styles.actionText}>{t('account.logout')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButton} onPress={handleDeleteAccount}>
+          <Text style={[styles.actionText, styles.deleteText]}>{t('account.delete_account')}</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.label}>{t('account.fivlo_purpose')}</Text>
+        <Text style={styles.infoText}>{t('account.purpose_placeholder')}</Text>
+
       </ScrollView>
+      <View style={styles.saveButtonContainer}>
+        <Button title={t('account.save')} onPress={handleSave} />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: Colors.primaryBeige,
-  },
-  scrollViewContentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  listContainer: {
-    backgroundColor: Colors.textLight,
-    borderRadius: 15,
-    overflow: 'hidden', // borderBottomWidth가 컨테이너 밖으로 나가지 않도록
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.primaryBeige,
-  },
-  settingItemText: {
-    fontSize: FontSizes.medium,
-    color: Colors.textDark,
-  },
+  screenContainer: { flex: 1, backgroundColor: Colors.primaryBeige },
+  container: { paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center' },
+  imageContainer: { alignItems: 'center', marginVertical: 20 },
+  profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
+  imageChangeText: { fontSize: FontSizes.medium, color: Colors.secondaryBrown, textDecorationLine: 'underline' },
+  label: { width: '100%', fontSize: FontSizes.medium, fontWeight: FontWeights.medium, color: Colors.textDark, marginBottom: 8, marginTop: 24 },
+  input: { width: '100%', backgroundColor: Colors.textLight, borderRadius: 10, padding: 15, fontSize: FontSizes.medium, borderWidth: 1, borderColor: Colors.secondaryBrown },
+  infoText: { width: '100%', fontSize: FontSizes.medium, color: Colors.secondaryBrown, marginTop: 5 },
+  actionButton: { width: '100%', marginTop: 24, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.secondaryBrown+'50'},
+  actionText: { fontSize: FontSizes.medium, color: Colors.textDark, fontWeight: '600' },
+  deleteText: { color: Colors.accentRed },
+  saveButtonContainer: { padding: 20, borderTopWidth: 1, borderTopColor: '#e0e0e0', backgroundColor: Colors.primaryBeige },
 });
 
 export default AccountManagementScreen;

@@ -71,7 +71,7 @@ const ObooniShopScreen = ({ isPremiumUser }) => {
       mockOwnedItems.push(selectedItem.id);
 
       setUserCoins(mockUserCoins);
-      Alert.alert(t('obooni.purchase_complete'), t('obooni.purchase_complete_message', { name: selectedItem.name }));
+      Alert.alert(t('obooni.purchase_complete'), t('obooni.purchase_complete_message', { name: getItemName(selectedItem.id) }));
       
       navigation.replace('ObooniCloset', { purchasedItem: selectedItem });
       setIsPurchaseConfirmModalVisible(false);
@@ -79,6 +79,20 @@ const ObooniShopScreen = ({ isPremiumUser }) => {
       Alert.alert(t('obooni.not_enough_coins'), t('obooni.not_enough_coins_message'));
       setIsPurchaseConfirmModalVisible(false);
     }
+  };
+
+  const getItemName = (itemId) => {
+    const itemNames = {
+      'shop1': t('obooni_shop.items.yellow_tshirt'),
+      'shop2': t('obooni_shop.items.jeans'),
+      'shop3': t('obooni_shop.items.glasses'),
+      'shop4': t('obooni_shop.items.green_shirt'),
+      'shop5': t('obooni_shop.items.red_padding'),
+      'shop6': t('obooni_shop.items.beige_skirt'),
+      'shop7': t('obooni_shop.items.blue_overall'),
+      'shop8': t('obooni_shop.items.hat'),
+    };
+    return itemNames[itemId] || shopItemsData.find(item => item.id === itemId)?.name;
   };
 
   const renderShopItem = ({ item }) => {
@@ -92,7 +106,7 @@ const ObooniShopScreen = ({ isPremiumUser }) => {
         disabled={isOwned || !isPremiumUser}
       >
         <Image source={item.image} style={styles.shopItemImage} />
-        <Text style={styles.shopItemName}>{item.name}</Text>
+        <Text style={styles.shopItemName}>{getItemName(item.id)}</Text>
         <View style={styles.priceContainer}>
           <Text style={styles.shopItemPrice}>{item.price}</Text>
           <FontAwesome5 name="coins" size={FontSizes.small} color={Colors.accentApricot} style={styles.coinIcon} />
@@ -141,7 +155,7 @@ const ObooniShopScreen = ({ isPremiumUser }) => {
               <>
                 <Image source={selectedItem.image} style={styles.confirmModalImage} />
                 <Text style={styles.confirmModalText}>
-                  {t('obooni.purchase_confirm', { name: selectedItem.name, price: selectedItem.price })}
+                  {t('obooni.purchase_confirm', { name: getItemName(selectedItem.id), price: selectedItem.price })}
                 </Text>
               </>
             )}

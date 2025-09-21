@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FontAwesome5 } from '@expo/vector-icons'; // 아이콘 사용을 위해 FontAwesome5 임포트
+import { FontAwesome5 } from '@expo/vector-icons';
 
 // 공통 스타일 및 컴포넌트 임포트
 import { GlobalStyles } from '../styles/GlobalStyles';
@@ -15,128 +15,98 @@ import { FontSizes, FontWeights } from '../styles/Fonts';
 import Header from '../components/common/Header';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
+import WeeklyTaskCard from '../components/common/WeeklyTaskCard';
 import { useTranslation } from 'react-i18next';
-
-// @react-native-community/datetimepicker 설치 필요: npm install @react-native-community/datetimepicker
-// FontAwesome5 아이콘 사용을 위해 @expo/vector-icons 설치 필요 (이전에 FontAwesome 설치했으면 이미 있을 수 있음)
 
 const RoutineSettingScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
 
-  const [goal, setGoal] = useState(''); // 상위 목표 입력
-  const [targetDate, setTargetDate] = useState(new Date()); // 달성 기간 설정 (특정 날짜)
-  const [isContinuous, setIsContinuous] = useState(false); // 종료 기한 없이 지속 여부
-  const [showDatePicker, setShowDatePicker] = useState(false); // 날짜 선택기 표시 여부
-  const [isLoadingAI, setIsLoadingAI] = useState(false); // AI 로딩 상태
-
-  // AI가 추천하는 단기 계획 목록
+  const [goal, setGoal] = useState('');
+  const [targetDate, setTargetDate] = useState(new Date());
+  const [isContinuous, setIsContinuous] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiRecommendedTasks, setAiRecommendedTasks] = useState([]);
-  const [isEditingTask, setIsEditingTask] = useState(false); // 수정 모달 표시 여부
-  const [currentEditingTask, setCurrentEditingTask] = useState(null); // 현재 수정 중인 태스크
-  const [editedTaskText, setEditedTaskText] = useState(''); // 수정된 태스크 텍스트
+  const [isEditingTask, setIsEditingTask] = useState(false);
+  const [currentEditingTask, setCurrentEditingTask] = useState(null);
+  const [editedTaskText, setEditedTaskText] = useState('');
 
-  // 날짜 선택기 변경 핸들러
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || targetDate;
     setShowDatePicker(false);
     setTargetDate(currentDate);
   };
 
-  // "맞춤일정 생성하기" 클릭 핸들러 (AI 세분화 요청)
   const handleGenerateSchedule = () => {
     if (!goal.trim()) {
       Alert.alert(t('core.routine.required_title'), t('core.routine.required_goal'));
       return;
     }
 
-    setIsLoadingAI(true); // 로딩 시작
-    setAiRecommendedTasks([]); // 이전 목록 초기화
+    setIsLoadingAI(true);
+    setAiRecommendedTasks([]);
 
-    // AI 세분화 로직 (백엔드 연동 전 임시 데이터)
     setTimeout(() => {
       const generatedTasks = [
-        { id: 'ai1', text: '매일 아침 10분 스트레칭', type: 'daily', editable: true },
-        { id: 'ai2', text: '주 3회 헬스장 방문', type: 'weekly', editable: true },
-        { id: 'ai3', text: '매일 저녁 샐러드 먹기', type: 'daily', editable: true },
-        { id: 'ai4', text: '매주 주말 등산하기', type: 'weekly', editable: true },
-        { id: 'ai5', text: '매일 자기 전 명상 5분', type: 'daily', editable: true },
-        { id: 'ai6', text: '매월 첫째 주 목표 점검', type: 'monthly', editable: true },
-        { id: 'ai7', text: '매일 아침 10분 스트레칭', type: 'daily', editable: true },
-        { id: 'ai8', text: '주 3회 헬스장 방문', type: 'weekly', editable: true },
-        { id: 'ai9', text: '매일 저녁 샐러드 먹기', type: 'daily', editable: true },
-        { id: 'ai10', text: '매주 주말 등산하기', type: 'weekly', editable: true },
-        { id: 'ai11', text: '매일 자기 전 명상 5분', type: 'daily', editable: true },
-        { id: 'ai12', text: '매월 첫째 주 목표 점검', type: 'monthly', editable: true },
+        { id: 'ai1', text: '매일 아침 10분 스트레칭', type: 'daily', week: 1, editable: true },
+        { id: 'ai2', text: '주 3회 헬스장 방문', type: 'weekly', week: 1, editable: true },
+        { id: 'ai3', text: '매일 저녁 샐러드 먹기', type: 'daily', week: 1, editable: true },
+        { id: 'ai4', text: '매주 주말 등산하기', type: 'weekly', week: 2, editable: true },
+        { id: 'ai5', text: '매일 자기 전 명상 5분', type: 'daily', week: 2, editable: true },
+        { id: 'ai6', text: '매월 첫째 주 목표 점검', type: 'monthly', week: 2, editable: true },
       ];
       setAiRecommendedTasks(generatedTasks);
-      setIsLoadingAI(false); // 로딩 종료
-    }, 2000); // 2초 후 데이터 로드 (로딩 시뮬레이션)
-
-    // 실제로는 백엔드 AI API (REQ-BE-AI-001) 호출
-    // const response = await getAiSuggestions(goal, isContinuous ? null : format(targetDate, 'yyyy-MM-dd'));
+      setIsLoadingAI(false);
+    }, 2000);
   };
 
-  // TASK에 추가하기 버튼 클릭 핸들러
   const handleAddTaskToTask = (task) => {
     Alert.alert('TASK에 추가', `"${task.text}" 항목을 TASK에 추가합니다.`);
-    // 실제로는 백엔드 API (REQ-BE-AI-003) 호출하여 TASK로 전환
-    // navigation.navigate('HomeScreen'); // 홈 화면으로 돌아가거나, Task 캘린더 화면으로 이동
   };
 
-  // 수정 아이콘 클릭 핸들러
   const handleEditIconClick = (task) => {
     setCurrentEditingTask(task);
     setEditedTaskText(task.text);
-    setIsEditingTask(true); // 수정 모달 열기
+    setIsEditingTask(true);
   };
 
-  // 수정 모달 저장 핸들러
   const handleSaveEditedTask = () => {
     setAiRecommendedTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === currentEditingTask.id ? { ...task, text: editedTaskText } : task
       )
     );
-    setIsEditingTask(false); // 수정 모달 닫기
+    setIsEditingTask(false);
     setCurrentEditingTask(null);
     setEditedTaskText('');
     Alert.alert('저장 완료', '일정이 수정되었습니다.');
-    // 실제로는 백엔드 API (REQ-BE-AI-002) 호출하여 수정 내용 반영
   };
 
-  // 수정 모달 취소 핸들러
   const handleCancelEdit = () => {
     setIsEditingTask(false);
     setCurrentEditingTask(null);
     setEditedTaskText('');
   };
 
-  // AI 추천 태스크 아이템 렌더링
-  const renderAiTaskItem = ({ item }) => (
-    <View style={styles.aiTaskItem}>
-      <Text style={styles.aiTaskText}>{item.text}</Text>
-      <View style={styles.aiTaskActions}>
-        <TouchableOpacity onPress={() => handleEditIconClick(item)} style={styles.aiTaskActionButton}>
-          <FontAwesome5 name="edit" size={20} color={Colors.secondaryBrown} />
-        </TouchableOpacity>
-        <Button
-          title="TASK에 추가하기"
-          onPress={() => handleAddTaskToTask(item)}
-          style={styles.addTaskButton}
-          textStyle={styles.addTaskButtonText}
-        />
-      </View>
-    </View>
-  );
+  const groupTasksByWeek = (tasks) => {
+    const grouped = {};
+    tasks.forEach(task => {
+      const week = task.week || 1;
+      if (!grouped[week]) {
+        grouped[week] = [];
+      }
+      grouped[week].push(task);
+    });
+    return grouped;
+  };
 
   return (
     <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
       <Header title={t('core.routine.header')} showBackButton={true} />
 
       <ScrollView contentContainerStyle={styles.scrollViewContentContainer}>
-        {/* 상위 목표 입력 필드 */}
         <Text style={styles.sectionTitle}>{t('core.routine.goal_input_label')}</Text>
         <Input
           placeholder={t('core.routine.goal_input_placeholder')}
@@ -147,7 +117,6 @@ const RoutineSettingScreen = () => {
           style={styles.goalInput}
         />
 
-        {/* 목표 달성 기간 설정 칸 */}
         <Text style={styles.sectionTitle}>{t('core.routine.target_period_label')}</Text>
         <View style={styles.dateOptionContainer}>
           <TouchableOpacity
@@ -178,18 +147,16 @@ const RoutineSettingScreen = () => {
             mode="date"
             display="default"
             onChange={onChangeDate}
-            minimumDate={new Date()} // 오늘 날짜부터 선택 가능
+            minimumDate={new Date()}
           />
         )}
 
-        {/* 맞춤일정 생성하기 버튼 */}
         <Button
           title={t('core.routine.generate')}
           onPress={handleGenerateSchedule}
           style={styles.generateButton}
         />
 
-        {/* AI 세분화 로딩 창 (2-2) */}
         {isLoadingAI && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.secondaryBrown} />
@@ -197,38 +164,24 @@ const RoutineSettingScreen = () => {
           </View>
         )}
 
-        {/* AI가 추천하는 반복일정 칸 (2-3, 3-3) */}
+        {/* AI가 추천하는 반복일정 칸 (수정된 부분) */}
         {aiRecommendedTasks.length > 0 && !isLoadingAI && (
           <View style={styles.aiRecommendationsContainer}>
-            <Text style={styles.aiRecommendationsTitle}>{t('core.routine.ai_title')}</Text>
-            {isContinuous ? (
-              // 종료 기한 없이 지속 선택 시 (2-3)
-              <FlatList
-                data={aiRecommendedTasks}
-                renderItem={renderAiTaskItem}
-                keyExtractor={item => item.id}
-                scrollEnabled={false} // ScrollView가 스크롤 담당
-                contentContainerStyle={styles.aiFlatListContent}
-              />
-            ) : (
-              // 달성 기간 설정 시 (3-3) - 주차별 목표 및 일정
-              <View style={styles.weeklyGoalsPlaceholder}>
-                <Text style={styles.placeholderText}>{t('core.routine.weekly_placeholder_1')}</Text>
-                <Text style={styles.placeholderText}>{t('core.routine.weekly_placeholder_2')}</Text>
-                {/* 실제 주차별 목표 FlatList 또는 UI 구현 */}
-                <FlatList
-                  data={aiRecommendedTasks} // 임시로 같은 데이터 사용, 실제로는 주차별 데이터
-                  renderItem={renderAiTaskItem}
-                  keyExtractor={item => item.id}
-                  scrollEnabled={false}
-                  contentContainerStyle={styles.aiFlatListContent}
+            <View style={styles.weeklyGoalsContainer}>
+              {Object.entries(groupTasksByWeek(aiRecommendedTasks)).map(([week, tasks]) => (
+                <WeeklyTaskCard
+                  key={week}
+                  weekNumber={parseInt(week)}
+                  tasks={tasks}
+                  onEditTask={handleEditIconClick}
+                  onAddToTask={handleAddTaskToTask}
                 />
-              </View>
-            )}
+              ))}
+            </View>
           </View>
         )}
 
-        {/* 수정 모달 (2-5, 3-4) */}
+        {/* 수정 모달 */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -303,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   dateOptionButtonActive: {
-    backgroundColor: Colors.accentApricot, // 활성 상태 배경색
+    backgroundColor: Colors.accentApricot,
   },
   dateOptionText: {
     fontSize: FontSizes.medium,
@@ -311,7 +264,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeights.regular,
   },
   dateOptionTextActive: {
-    color: Colors.textLight, // 활성 상태 텍스트 색상
+    color: Colors.textLight,
     fontWeight: FontWeights.bold,
   },
   datePickerButton: {
@@ -360,73 +313,14 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
-  aiRecommendationsTitle: {
-    fontSize: FontSizes.large,
-    fontWeight: FontWeights.bold,
-    color: Colors.textDark,
-    marginBottom: 15,
-  },
-  aiFlatListContent: {
-    paddingBottom: 10,
-  },
-  aiTaskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.primaryBeige,
-  },
-  aiTaskText: {
-    fontSize: FontSizes.medium,
-    color: Colors.textDark,
-    flex: 1,
-    marginRight: 10,
-  },
-  aiTaskActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aiTaskActionButton: {
-    padding: 5,
-    marginRight: 10,
-  },
-  addTaskButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: Colors.accentApricot,
-    minWidth: 100,
-  },
-  addTaskButtonText: {
-    fontSize: FontSizes.small,
-    fontWeight: FontWeights.bold,
-    color: Colors.textLight,
-  },
-  weeklyGoalsPlaceholder: {
+  weeklyGoalsContainer: {
     width: '100%',
-    backgroundColor: Colors.primaryBeige,
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: Colors.secondaryBrown,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
   },
-  placeholderText: {
-    fontSize: FontSizes.small,
-    color: Colors.secondaryBrown,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  // 수정 모달 스타일
   editModalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 반투명 배경
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   editModalContent: {
     backgroundColor: Colors.textLight,

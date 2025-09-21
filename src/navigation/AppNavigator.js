@@ -1,6 +1,7 @@
 // src/navigation/AppNavigator.js
 
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -20,6 +21,7 @@ import PurposeSelectionScreen from '../screens/PurposeSelectionScreen';
 import HomeScreen from '../screens/HomeScreen';
 import FeaturesScreen from '../screens/FeaturesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import Header from '../components/common/Header';
 import AccountManagementScreen from '../screens/AccountManagementScreen'; // 계정 관리
 
 // 3. Task (할 일)
@@ -34,7 +36,6 @@ import CategoryEditModal from '../screens/Task/CategoryEditModal';
 // 4. 포모도로
 import PomodoroScreen from '../screens/Pomodoro/PomodoroScreen';
 import PomodoroGoalCreationScreen from '../screens/Pomodoro/PomodoroGoalCreationScreen';
-import PomodoroGoalSelectionScreen from '../screens/Pomodoro/PomodoroGoalSelectionScreen';
 import PomodoroTimerScreen from '../screens/Pomodoro/PomodoroTimerScreen';
 import PomodoroPauseScreen from '../screens/Pomodoro/PomodoroPauseScreen';
 import PomodoroResetConfirmModal from '../screens/Pomodoro/PomodoroResetConfirmModal';
@@ -89,6 +90,15 @@ import { FontSizes, FontWeights } from '../styles/Fonts';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const TempScreen = ({ route }) => (
+  <View style={{ flex: 1, backgroundColor: Colors.primaryBeige }}>
+    <Header title={route.name} showBackButton={true} />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: FontSizes.large }}>{route.name} Screen</Text>
+    </View>
+  </View>
+);
 
 // 메인 탭 내비게이터 (하단 탭바)
 const MainTabNavigator = () => {
@@ -176,7 +186,6 @@ const AppNavigator = () => {
         {/* Pomodoro */}
         <Stack.Screen name="Pomodoro" component={PomodoroScreen} />
         <Stack.Screen name="PomodoroGoalCreation" component={PomodoroGoalCreationScreen} />
-        <Stack.Screen name="PomodoroGoalSelection" component={PomodoroGoalSelectionScreen} />
         <Stack.Screen name="PomodoroTimer" component={PomodoroTimerScreen} />
         <Stack.Screen name="PomodoroPause" component={PomodoroPauseScreen} />
         <Stack.Screen name="PomodoroResetConfirmModal" component={PomodoroResetConfirmModal} options={{ presentation: 'modal' }} />
@@ -212,6 +221,12 @@ const AppNavigator = () => {
         <Stack.Screen name="ObooniCloset" component={ObooniClosetScreen} />
         <Stack.Screen name="ObooniOwnedItems" component={ObooniOwnedItemsScreen} />
         <Stack.Screen name="ObooniShop" component={ObooniShopScreen} />
+
+        <Stack.Screen name="ProfileSettings" component={TempScreen} />
+        <Stack.Screen name="PremiumMembership" component={TempScreen} />
+        <Stack.Screen name="Information" component={TempScreen} />
+        <Stack.Screen name="Report" component={TempScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

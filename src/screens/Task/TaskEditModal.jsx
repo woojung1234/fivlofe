@@ -18,7 +18,7 @@ const TaskEditModal = ({ mode, initialTask, onSave, onClose }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const [taskContent, setTaskContent] = useState(initialTask ? initialTask.text : '');
-  const [selectedCategory, setSelectedCategory] = useState(initialTask ? initialTask.category : '일상'); // 기본 카테고리
+  const [selectedCategory, setSelectedCategory] = useState(initialTask ? initialTask.category : t('task_calendar.categories.daily')); // 기본 카테고리
   const [selectedCategoryColor, setSelectedCategoryColor] = useState(initialTask ? initialTask.color : Colors.primaryBeige); // 기본 카테고리 색상
   const [isDailyRepeat, setIsDailyRepeat] = useState(initialTask ? initialTask.isDailyRepeat : false);
   const [isAlbumLinked, setIsAlbumLinked] = useState(initialTask ? initialTask.isAlbumLinked : false);
@@ -27,11 +27,11 @@ const TaskEditModal = ({ mode, initialTask, onSave, onClose }) => {
 
   // 임시 카테고리 목록 (실제로는 백엔드에서 가져옴)
   const mockCategories = [
-    { name: '일상', color: Colors.primaryBeige },
-    { name: '운동', color: '#FFABAB' },
-    { name: '공부', color: '#99DDFF' },
-    { name: '취미', color: '#A0FFC3' },
-    { name: '업무', color: '#D1B5FF' },
+    { name: t('task_calendar.categories.daily'), color: Colors.primaryBeige },
+    { name: t('task_calendar.categories.exercise'), color: '#FFABAB' },
+    { name: t('task_calendar.categories.study'), color: '#99DDFF' },
+    { name: t('task_calendar.categories.hobby'), color: '#A0FFC3' },
+    { name: t('task_calendar.categories.work'), color: '#D1B5FF' },
   ];
 
   // 카테고리 선택 핸들러

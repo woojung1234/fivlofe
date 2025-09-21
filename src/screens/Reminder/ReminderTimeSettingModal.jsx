@@ -1,10 +1,9 @@
 // src/screens/ReminderTimeSettingModal.jsx
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker'; // 시간 선택 UI
 import { format, setHours, setMinutes } from 'date-fns';
-import { FontAwesome5 } from '@expo/vector-icons';
 
 // 공통 스타일 및 컴포넌트 임포트
 import { Colors } from '../../styles/color';
@@ -14,10 +13,11 @@ import { useTranslation } from 'react-i18next';
 
 const ReminderTimeSettingModal = ({ initialTime, onTimeSelected, onClose }) => {
   const { t } = useTranslation();
-  const [selectedDate, setSelectedDate] = useState(new Date()); // DateTimePicker는 Date 객체 사용
-  const [selectedDays, setSelectedDays] = useState({
-    '일': false, '월': false, '화': false, '수': false, '목': false, '금': false, '토': false
-  });
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // 초기 요일 상태 설정
+  const initialDays = { '일': false, '월': false, '화': false, '수': false, '목': false, '금': false, '토': false };
+  const [selectedDays, setSelectedDays] = useState(initialDays);
 
   // 초기 시간 설정
   useEffect(() => {
@@ -46,8 +46,13 @@ const ReminderTimeSettingModal = ({ initialTime, onTimeSelected, onClose }) => {
     }
     onClose();
   };
+  
+  // t 함수를 사용하여 요일 배열을 가져옵니다.
+  // 'reminder.days_full' 키에 ['월요일', '화요일', ...] 값이 있다고 가정합니다.
+  // 만약 없다면 ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'] 로 직접 사용하셔도 됩니다.
+  const daysOfWeek = t('reminder.days_full', { returnObjects: true });
+  const dayShort = t('reminder.days_short', { returnObjects: true });
 
-  const daysOfWeek = t('reminder.days', { returnObjects: true });
 
   return (
     <Modal
@@ -60,28 +65,32 @@ const ReminderTimeSettingModal = ({ initialTime, onTimeSelected, onClose }) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>{t('reminder.time_setting')}</Text>
 
-          {/* 시간 선택 (6번 페이지) */}
-          <DateTimePicker
-            value={selectedDate}
-            mode="time"
-            display="spinner" // 스크롤 형식
-            onChange={onChangeTime}
-            style={styles.timePicker}
-          />
+          {/* 시간 선택 */}
+          <View style={styles.timePickerWrapper}>
+            <DateTimePicker
+              value={selectedDate}
+              mode="time"
+              display="spinner" // 스크롤 형식
+              onChange={onChangeTime}
+              style={styles.timePicker}
+              locale="ko-KR" // 한국어 설정
+            />
+          </View>
+          
 
           {/* 요일 반복 설정 */}
-          <Text style={styles.sectionTitle}>{t('reminder.repeat_days')}</Text>
           <View style={styles.daysContainer}>
-            {daysOfWeek.map(day => (
-              <TouchableOpacity
-                key={day}
-                style={[styles.dayButton, selectedDays[day] && styles.dayButtonActive]}
-                onPress={() => toggleDay(day)}
-              >
-                <Text style={[styles.dayButtonText, selectedDays[day] && styles.dayButtonTextActive]}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
+            {daysOfWeek.map((day, index) => (
+              <View key={day} style={styles.dayRow}>
+                <Text style={styles.dayText}>{day}</Text>
+                <Switch
+                  trackColor={{ false: Colors.secondaryBrown, true: Colors.accentApricot }}
+                  thumbColor={Colors.textLight}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={() => toggleDay(dayShort[index])}
+                  value={selectedDays[dayShort[index]]}
+                />
+              </View>
             ))}
           </View>
 
@@ -98,77 +107,60 @@ const ReminderTimeSettingModal = ({ initialTime, onTimeSelected, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalContent: {
-    backgroundColor: Colors.textLight,
-    borderRadius: 20,
+    backgroundColor: Colors.primaryBeige,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 25,
-    width: '90%',
-    maxHeight: '85%',
+    width: '100%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
   },
   modalTitle: {
-    fontSize: FontSizes.large,
+    fontSize: FontSizes.xlarge,
     fontWeight: FontWeights.bold,
     color: Colors.textDark,
     marginBottom: 20,
     textAlign: 'center',
   },
+  timePickerWrapper: {
+    width: '100%',
+    backgroundColor: Colors.textLight,
+    borderRadius: 15,
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
   timePicker: {
     width: '100%',
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: FontSizes.medium,
-    fontWeight: FontWeights.bold,
-    color: Colors.textDark,
-    marginBottom: 10,
-    width: '100%',
-    textAlign: 'left',
-    marginTop: 15,
+    height: 180,
   },
   daysContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
     width: '100%',
-    marginBottom: 20,
+    backgroundColor: Colors.textLight,
+    borderRadius: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 30,
   },
-  dayButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+  dayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.primaryBeige,
-    margin: 5,
-    borderWidth: 1,
-    borderColor: Colors.secondaryBrown,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.primaryBeige,
   },
-  dayButtonActive: {
-    backgroundColor: Colors.accentApricot,
-  },
-  dayButtonText: {
+  dayText: {
     fontSize: FontSizes.medium,
     color: Colors.textDark,
-  },
-  dayButtonTextActive: {
-    color: Colors.textLight,
-    fontWeight: FontWeights.bold,
+    fontWeight: FontWeights.medium,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    marginTop: 20,
   },
   actionButton: {
     flex: 1,

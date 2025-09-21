@@ -1,11 +1,9 @@
 // src/screens/Analysis/DDayAnalysisView.jsx
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Pressable, TextInput, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-// format 함수가 여기 임포트되어 있는지 확인!
-// ✨ isValid 함수를 추가로 임포트합니다.
 import { format, differenceInDays, isSameDay, startOfMonth, eachDayOfInterval, endOfMonth, isValid } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
@@ -15,9 +13,8 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../styles/color';
 import { FontSizes, FontWeights } from '../../styles/Fonts';
 import Button from '../../components/common/Button';
-import CharacterImage from '../../components/common/CharacterImage';
 
-// 캘린더 한국어 설정 (TaskCalendarScreen과 동일)
+// 캘린더 한국어 설정
 LocaleConfig.locales['ko'] = {
   monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
   monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
@@ -27,17 +24,42 @@ LocaleConfig.locales['ko'] = {
 };
 LocaleConfig.defaultLocale = 'ko';
 
+// 목표 설정 모달 컴포넌트
+const GoalSettingModal = ({ visible, onClose, onSelectGoal }) => {
+  const presetGoals = ['공부하기', '운동하기', '독서하기', '코딩하기', '국비 교육 공부하기', '목표 작성하기'];
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.modalBackdrop} onPress={onClose}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>무엇에 집중하고 싶으신가요?</Text>
+          <ScrollView>
+            {presetGoals.map((goal, index) => (
+              <TouchableOpacity key={index} style={styles.modalItem} onPress={() => onSelectGoal(goal)}>
+                <Text style={styles.modalItemText}>{goal}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <Button title="닫기" onPress={onClose} style={{ marginTop: 10 }} />
+        </View>
+      </Pressable>
+    </Modal>
+  );
+};
 
 const DDayAnalysisView = ({ isPremiumUser }) => {
   const navigation = useNavigation();
   const [isLocked, setIsLocked] = useState(!isPremiumUser);
 
-  const [goalPhrase, setGoalPhrase] = useState('');
-  
-  // mockDDayGoal을 먼저 정의합니다.
+  // 초기 목표 문구를 비워두어 placeholder가 보이도록 수정
   const mockDDayGoal = {
-    phrase: '토익 900점 달성!',
-    date: '2025-08-31', // 실제 데이터 로딩 시 이 부분이 유효한지 확인 필요
+    phrase: '', // 초기값 비움
+    date: null, // 초기값 null
     totalConcentrationTime: 1250,
     currentAchievementRate: 75,
     dailyConcentration: {
@@ -45,81 +67,68 @@ const DDayAnalysisView = ({ isPremiumUser }) => {
       '2025-08-05': { minutes: 90 },
       '2025-08-10': { minutes: 150 },
       '2025-08-15': { minutes: 60 },
-      '2025-07-21': { minutes: 180 }, // 오늘 날짜 2025-07-21 이 포함되도록 예시 추가
+      '2025-07-21': { minutes: 180 },
       '2025-07-20': { minutes: 100 },
       '2025-07-19': { minutes: 75 },
     }
   };
 
-  // dDayGoal 상태를 mockDDayGoal로 초기화합니다.
   const [dDayGoal, setDDayGoal] = useState(mockDDayGoal);
-
-  // goalDate 상태를 dDayGoal.date를 기반으로 초기화하되, 유효성 검사를 수행합니다.
-  // 이 부분은 초기 렌더링 시점에만 한 번 수행됩니다.
-  const initialGoalDate = isValid(new Date(dDayGoal.date)) ? new Date(dDayGoal.date) : new Date();
-  const [goalDate, setGoalDate] = useState(initialGoalDate);
-
+  const [goalDate, setGoalDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isGoalModalVisible, setGoalModalVisible] = useState(false);
 
-  // dDayGoal.date가 변경될 때마다 goalDate를 업데이트합니다.
-  // 이 useEffect는 dDayGoal이 외부에서 변경될 때 goalDate도 동기화하기 위함입니다.
   useEffect(() => {
     const parsedDate = new Date(dDayGoal.date);
     if (isValid(parsedDate)) {
       setGoalDate(parsedDate);
-    } else {
-      console.warn("D-Day 목표 날짜가 유효하지 않습니다. 오늘 날짜로 대체합니다.", dDayGoal.date);
-      setGoalDate(new Date()); // 유효하지 않으면 오늘 날짜로 대체
     }
   }, [dDayGoal.date]);
 
-
   const onChangeDate = (event, selectedDate) => {
-    const currentDate = selectedDate || goalDate;
     setShowDatePicker(false);
-    // 날짜 선택기에서 선택된 날짜가 유효한지 확인 후 설정
-    if (isValid(currentDate)) {
-        setGoalDate(currentDate);
-        // D-Day 목표 날짜도 업데이트해야 할 경우 여기에 추가
-        // setDDayGoal(prev => ({ ...prev, date: format(currentDate, 'yyyy-MM-dd') }));
-    } else {
-        console.warn("날짜 선택기에서 유효하지 않은 날짜가 선택되었습니다.");
+    if (selectedDate) {
+      setGoalDate(selectedDate);
+      setDDayGoal(prev => ({ ...prev, date: format(selectedDate, 'yyyy-MM-dd') }));
     }
   };
 
   const handleSetGoalPhrase = () => {
-    Alert.alert('목표 문구 설정', '목표 문구를 설정하는 모달/화면으로 이동합니다.');
+    setGoalModalVisible(true);
+  };
+
+  const handleSelectGoal = (goal) => {
+    setDDayGoal(prev => ({ ...prev, phrase: goal }));
+    setGoalModalVisible(false);
   };
 
   const handleStartPomodoro = () => {
-    Alert.alert('포모도로 연동', '이 목표로 포모도로 기능을 시작합니다.');
+    if (!dDayGoal.phrase || !dDayGoal.date) {
+      Alert.alert('알림', '목표 문구와 목표 기간을 모두 설정해주세요.');
+      return;
+    }
+    navigation.navigate('PomodoroTimerScreen', { goal: dDayGoal });
   };
 
   const getMarkedDatesForCalendar = () => {
     const marked = {};
-    // dDayGoal.date가 유효한 Date 객체인지 확인하고 사용합니다.
-    // 유효하지 않으면 현재 날짜를 기본값으로 사용합니다.
     const baseDateForCalendar = isValid(new Date(dDayGoal.date)) ? new Date(dDayGoal.date) : new Date();
 
     const start = startOfMonth(baseDateForCalendar);
     const end = endOfMonth(baseDateForCalendar);
 
-    // start와 end가 유효한 Date 객체인지 다시 한번 확인 (방어적 코딩)
     if (!isValid(start) || !isValid(end)) {
-        console.error("캘린더 시작/종료 날짜가 유효하지 않습니다. 빈 캘린더 데이터를 반환합니다.");
-        return {}; // 유효하지 않으면 빈 객체 반환
+        return {};
     }
 
     const daysInMonth = eachDayOfInterval({ start, end });
 
     daysInMonth.forEach(day => {
-      // day가 유효한 Date 객체인지 확인
       if (!isValid(day)) {
-        console.warn("캘린더 날짜 반복 중 유효하지 않은 날짜 객체 발견. 건너뜁니다:", day);
-        return; // 유효하지 않으면 해당 날짜는 건너뛰기
+        return;
       }
 
-      const dayString = format(day, 'yyyy-MM-dd'); // 이 부분에서 `day`는 유효한 Date 객체여야 합니다.
+      const dayString = format(day, 'yyyy-MM-dd');
       const minutes = dDayGoal.dailyConcentration[dayString]?.minutes || 0;
       let obooniImageSource = null;
 
@@ -144,15 +153,12 @@ const DDayAnalysisView = ({ isPremiumUser }) => {
               color: minutes > 0 ? Colors.textLight : Colors.textDark,
             },
           },
-          // dots에 obooniImageSource를 사용하는 것은 format 오류와 무관하지만,
-          // 여기에서도 유효성 검사를 통해 안정성을 높일 수 있습니다.
           dots: [{ key: `obooni-${dayString}`, color: obooniImageSource ? Colors.accentApricot : 'transparent', selectedDotColor: 'transparent' }],
         };
       }
     });
     return marked;
   };
-
 
   if (isLocked) {
     return (
@@ -168,12 +174,20 @@ const DDayAnalysisView = ({ isPremiumUser }) => {
     );
   }
 
+  const isStartButtonEnabled = dDayGoal.phrase && dDayGoal.date;
+
   return (
     <View style={styles.container}>
+      <GoalSettingModal
+        visible={isGoalModalVisible}
+        onClose={() => setGoalModalVisible(false)}
+        onSelectGoal={handleSelectGoal}
+      />
+      
       <ScrollView contentContainerStyle={styles.scrollViewContentContainer}>
         <Text style={styles.sectionTitle}>목표 문구 설정</Text>
         <TouchableOpacity style={styles.goalPhraseButton} onPress={handleSetGoalPhrase}>
-          <Text style={styles.goalPhraseText}>
+          <Text style={dDayGoal.phrase ? styles.goalPhraseText : styles.placeholderText}>
             {dDayGoal.phrase || '달성하고자 하는 목표를 입력하세요'}
           </Text>
           <FontAwesome5 name="edit" size={18} color={Colors.secondaryBrown} />
@@ -181,70 +195,76 @@ const DDayAnalysisView = ({ isPremiumUser }) => {
 
         <Text style={styles.sectionTitle}>목표 기간 설정</Text>
         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-          <Text style={styles.datePickerButtonText}>
-            {/* goalDate는 useEffect에 의해 항상 유효한 Date 객체임을 가정합니다. */}
-            {format(goalDate, 'yyyy년 MM월 dd일', { locale: ko })} {/* ✨ locale 추가 */}
+          <Text style={dDayGoal.date ? styles.datePickerButtonText : styles.placeholderText}>
+            {dDayGoal.date ? format(goalDate, 'yyyy년 MM월 dd일', { locale: ko }) : '목표 날짜를 선택하세요'}
           </Text>
         </TouchableOpacity>
         {showDatePicker && (
           <DateTimePicker
-            testID="dateTimePicker"
             value={goalDate}
             mode="date"
-            display="default"
+            display="spinner"
             onChange={onChangeDate}
             minimumDate={new Date()}
           />
         )}
 
-        <Button title="시작하기" onPress={handleStartPomodoro} style={styles.startButton} />
-
-        <Text style={styles.sectionTitle}>집중 목표</Text>
-        <View style={styles.goalDisplayContainer}>
-          <Text style={styles.goalDisplayText}>{dDayGoal.phrase}</Text>
-          {/* dDayGoal.date가 유효한지 확인하고 D-Day를 계산합니다. */}
-          <Text style={styles.dDayText}>
-            D-{isValid(new Date(dDayGoal.date)) ? differenceInDays(new Date(dDayGoal.date), new Date()) : '날짜 오류'}
-          </Text>
-        </View>
-
-        <Text style={styles.sectionTitle}>집중 요약</Text>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>총 집중 시간</Text>
-            <Text style={styles.statValue}>{dDayGoal.totalConcentrationTime || 0}분</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>현재까지 목표 달성율</Text>
-            <Text style={styles.statValue}>{dDayGoal.currentAchievementRate || 0}%</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>캘린더 달성일</Text>
-        <Calendar
-          markingType={'custom'}
-          markedDates={getMarkedDatesForCalendar()}
-          theme={{
-            backgroundColor: Colors.primaryBeige,
-            calendarBackground: Colors.primaryBeige,
-            textSectionTitleColor: Colors.secondaryBrown,
-            selectedDayBackgroundColor: Colors.accentApricot,
-            selectedDayTextColor: Colors.textLight,
-            todayTextColor: Colors.accentApricot,
-            dayTextColor: Colors.textDark,
-            textDisabledColor: '#d9e1e8',
-            dotColor: Colors.accentApricot,
-            selectedDotColor: Colors.textLight,
-            arrowColor: Colors.secondaryBrown,
-            monthTextColor: Colors.textDark,
-            textMonthFontWeight: FontWeights.bold,
-            textMonthFontSize: FontSizes.large,
-            textDayHeaderFontWeight: FontWeights.medium,
-            textDayFontSize: FontSizes.medium,
-            textDayFontWeight: FontWeights.regular,
-          }}
-          style={styles.calendar}
+        <Button 
+            title="시작하기" 
+            onPress={handleStartPomodoro} 
+            style={[styles.startButton, !isStartButtonEnabled && styles.disabledButton]}
+            disabled={!isStartButtonEnabled}
         />
+
+        {isStartButtonEnabled && (
+          <>
+            <Text style={styles.sectionTitle}>집중 목표</Text>
+            <View style={styles.goalDisplayContainer}>
+              <Text style={styles.goalDisplayText}>{dDayGoal.phrase}</Text>
+              <Text style={styles.dDayText}>
+                D-{differenceInDays(new Date(dDayGoal.date), new Date())}
+              </Text>
+            </View>
+
+            <Text style={styles.sectionTitle}>집중 요약</Text>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>총 집중 시간</Text>
+                <Text style={styles.statValue}>{dDayGoal.totalConcentrationTime || 0}분</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>현재까지 목표 달성율</Text>
+                <Text style={styles.statValue}>{dDayGoal.currentAchievementRate || 0}%</Text>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>캘린더 달성일</Text>
+            <Calendar
+              markingType={'custom'}
+              markedDates={getMarkedDatesForCalendar()}
+              theme={{
+                backgroundColor: Colors.primaryBeige,
+                calendarBackground: Colors.primaryBeige,
+                textSectionTitleColor: Colors.secondaryBrown,
+                selectedDayBackgroundColor: Colors.accentApricot,
+                selectedDayTextColor: Colors.textLight,
+                todayTextColor: Colors.accentApricot,
+                dayTextColor: Colors.textDark,
+                textDisabledColor: '#d9e1e8',
+                dotColor: Colors.accentApricot,
+                selectedDotColor: Colors.textLight,
+                arrowColor: Colors.secondaryBrown,
+                monthTextColor: Colors.textDark,
+                textMonthFontWeight: FontWeights.bold,
+                textMonthFontSize: FontSizes.large,
+                textDayHeaderFontWeight: FontWeights.medium,
+                textDayFontSize: FontSizes.medium,
+                textDayFontWeight: FontWeights.regular,
+              }}
+              style={styles.calendar}
+            />
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -252,8 +272,8 @@ const DDayAnalysisView = ({ isPremiumUser }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
-    paddingHorizontal: 0,
+    flex: 1,
+    backgroundColor: Colors.primaryBeige,
   },
   scrollViewContentContainer: {
     paddingHorizontal: 20,
@@ -307,6 +327,11 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
     flex: 1,
   },
+  placeholderText: {
+    fontSize: FontSizes.medium,
+    color: Colors.gray,
+    flex: 1,
+  },
   datePickerButton: {
     width: '100%',
     backgroundColor: Colors.textLight,
@@ -328,6 +353,10 @@ const styles = StyleSheet.create({
   startButton: {
     width: '100%',
     marginTop: 30,
+  },
+  disabledButton: {
+    backgroundColor: Colors.gray,
+    elevation: 0,
   },
   goalDisplayContainer: {
     width: '100%',
@@ -393,6 +422,35 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     marginBottom: 20,
+  },
+  // Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: Colors.textLight,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '60%',
+  },
+  modalTitle: {
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.bold,
+    color: Colors.textDark,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalItem: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalItemText: {
+    fontSize: FontSizes.medium,
+    color: Colors.textDark,
   },
 });
 

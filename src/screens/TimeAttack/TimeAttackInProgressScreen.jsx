@@ -1,8 +1,7 @@
 // src/screens/TimeAttack/TimeAttackInProgressScreen.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
-// --- 수정: ScrollView와 Dimensions 임포트 ---
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Image, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ScrollView, Dimensions } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -20,10 +19,8 @@ import { useTranslation } from 'react-i18next';
 
 const AUTO_NEXT_THRESHOLD = 3000; // 자동 다음 단계 전환 대기 시간 (3초)
 
-// --- 수정: 화면 너비를 기준으로 동적 크기 계산 ---
+// 화면 너비를 기준으로 동적 크기 계산
 const { width: screenWidth } = Dimensions.get('window');
-const timerSize = Math.min(screenWidth * 0.8, 300); // 타이머 원의 크기를 화면 너비의 80%로 설정 (최대 300px)
-const characterSize = Math.min(screenWidth * 0.4, 150); // 캐릭터 크기
 const nextButtonSize = Math.min(screenWidth * 0.35, 120); // 다음 버튼 크기
 
 const TimeAttackInProgressScreen = () => {
@@ -36,31 +33,38 @@ const TimeAttackInProgressScreen = () => {
 
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0); // 현재 단계의 남은 시간
-  const [isRunning, setIsRunning] = useState(true); // 타이머 작동 여부
+  const [isRunning, setIsRunning] = useState(false); // 타이머 작동 여부 - 초기값을 false로 변경
   const [nextButtonPressTime, setNextButtonPressTime] = useState(0); // 다음 버튼 눌린 시간
 
   const timerRef = useRef(null); // setInterval 참조
   const nextTimerRef = useRef(null); // 자동 다음 단계 전환 타이머
 
-  // 시계 바늘 및 진행도 애니메이션 값
-  const minuteHandRotation = useRef(new Animated.Value(0)).current;
-  const progressFill = useRef(new Animated.Value(0)).current; // 0-100% 진행도
-  const obooniMovementAnim = useRef(new Animated.Value(0)).current; // 오분이 움직임 애니메이션
 
   const currentTask = subdividedTasks[currentTaskIndex];
-  const totalTaskDuration = currentTask ? currentTask.time * 60 : 0; // 현재 Task의 총 시간 (초)
 
   // 타이머 로직
   useEffect(() => {
     if (currentTask) {
       setTimeLeft(currentTask.time * 60); // 분을 초로 변환
       setIsRunning(true); // 새 태스크 시작 시 타이머 자동 시작
+      
+      // TTS: 태스크 시작 메시지 (한영 번역) - 약간의 지연 후 실행
+      setTimeout(() => {
+        const startMessageKo = `${currentTask.text} 시작합니다.`;
+        const startMessageEn = `${currentTask.text} has started.`;
+        
+        if (i18n.language === 'ko') {
+          speakText(startMessageKo);
+        } else {
+          speakText(startMessageEn);
+        }
+      }, 500); // 0.5초 지연
     } else {
       // 모든 태스크 완료
       navigation.replace('TimeAttackComplete', { selectedGoal });
       return;
     }
-  }, [currentTaskIndex, subdividedTasks]);
+  }, [currentTaskIndex]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -77,33 +81,6 @@ const TimeAttackInProgressScreen = () => {
     return () => clearInterval(timerRef.current);
   }, [isRunning, timeLeft]);
 
-  // 시계 바늘 및 진행도 애니메이션 업데이트
-  useEffect(() => {
-    if (totalTaskDuration > 0) {
-      const elapsedSeconds = totalTaskDuration - timeLeft;
-      const progressPercentage = (elapsedSeconds / totalTaskDuration) * 100;
-      const minuteAngle = (elapsedSeconds % 60) * 6; // 1초에 6도
-      minuteHandRotation.setValue(minuteAngle);
-      progressFill.setValue(progressPercentage);
-    }
-  }, [timeLeft, totalTaskDuration]);
-
-  // 오분이 움직임 애니메이션
-  useEffect(() => {
-    if (isRunning) {
-      Animated.loop(
-        Animated.timing(obooniMovementAnim, {
-          toValue: 1,
-          duration: 2000, // 오분이가 뛰어다니는 모션 (2초마다 반복)
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      ).start();
-    } else {
-      obooniMovementAnim.stopAnimation();
-      obooniMovementAnim.setValue(0); // 정지 시 초기화
-    }
-  }, [isRunning]);
 
 
   const formatTime = (totalSeconds) => {
@@ -123,10 +100,18 @@ const TimeAttackInProgressScreen = () => {
 
   const handleTaskComplete = () => {
     setIsRunning(false); // 타이머 정지
-    const message = t('time_attack.completed_message', { task: currentTask.text });
-    speakText(message); // 음성 알림
+    
+    // TTS: 완료 메시지 (한영 번역)
+    const completedMessageKo = `${currentTask.text} 완료되었습니다.`;
+    const completedMessageEn = `${currentTask.text} has been completed.`;
+    
+    if (i18n.language === 'ko') {
+      speakText(completedMessageKo);
+    } else {
+      speakText(completedMessageEn);
+    }
 
-    Alert.alert(t('time_attack.completed_title'), message, [
+    Alert.alert(t('time_attack.completed_title'), completedMessageKo, [
       { text: t('common.ok'), onPress: () => {
         handleNextTask();
       }},
@@ -161,20 +146,6 @@ const TimeAttackInProgressScreen = () => {
     }
   };
 
-  // 오분이 캐릭터 움직임 (좌우 흔들림)
-  const obooniShake = obooniMovementAnim.interpolate({
-    inputRange: [0, 0.25, 0.5, 0.75, 1],
-    outputRange: ['0deg', '5deg', '0deg', '-5deg', '0deg'],
-  });
-
-  // 진행도 바 색상 그라데이션
-  const progressColor = progressFill.interpolate({
-    inputRange: [0, 50, 100], // 0% (시작), 50% (중간), 100% (완료)
-    outputRange: [Colors.accentApricot, '#FF8C00', '#FF4500'], // 노랑 -> 주황 -> 빨강
-    extrapolate: 'clamp', // 범위를 벗어나지 않도록
-  });
-
-  const animatedBorderColor = progressColor;
 
 
   return (
@@ -186,42 +157,19 @@ const TimeAttackInProgressScreen = () => {
         <Text style={styles.goalText}>{selectedGoal}</Text>
         <Text style={styles.currentTaskText}>{currentTask ? currentTask.text : t('time_attack.ready')}</Text>
 
-        <View style={styles.timerDisplayContainer}>
-          <Animated.View style={[
-            styles.timerCircleOuter, 
-            { 
-              borderColor: animatedBorderColor,
-              // --- 수정: 동적 크기 적용 ---
-              width: timerSize,
-              height: timerSize,
-              borderRadius: timerSize / 2
-            }
-          ]}>
-            <Image
-              source={require('../../../assets/images/obooni_clock.png')}
-              style={styles.obooniClock}
-            />
-            <Animated.Image
-              source={require('../../../assets/images/clock_needle.png')}
-              style={[
-                styles.clockNeedle,
-                { transform: [{ rotate: minuteHandRotation.interpolate({
-                    inputRange: [0, 360],
-                    outputRange: ['0deg', '360deg'],
-                  })
-                }]}
-              ]}
-            />
-            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-            <Text style={styles.remainingText}>
-              {t('time_attack.remaining_time', { min: Math.floor(timeLeft / 60).toString().padStart(2, '0'), sec: (timeLeft % 60).toString().padStart(2, '0') })}
-            </Text>
-          </Animated.View>
+        {/* 타임어택 오분이.gif */}
+        <View style={styles.obooniContainer}>
+          <Image
+            source={require('../../../assets/타임어택 오분이.gif')}
+            style={styles.obooniGif}
+            resizeMode="contain"
+          />
         </View>
 
-        <Animated.View style={[styles.obooniCharacterWrapper, { transform: [{ rotateY: obooniShake }] }]}>
-          <CharacterImage style={styles.obooniCharacter} />
-        </Animated.View>
+        {/* 시간 표시 */}
+        <View style={styles.timeContainer}>
+          <Text style={styles.timeText}>{formatTime(timeLeft)}</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.nextButton}
@@ -262,53 +210,23 @@ const styles = StyleSheet.create({
     marginBottom: 20, // 여백 축소
     textAlign: 'center',
   },
-  timerDisplayContainer: {
+  obooniContainer: {
     alignItems: 'center',
-    marginBottom: 20, // 여백 축소
+    marginBottom: 30,
   },
-  timerCircleOuter: {
-    // --- 수정: 고정 크기 제거 (JSX에서 동적으로 할당) ---
-    borderWidth: 10,
-    justifyContent: 'center',
+  obooniGif: {
+    width: 200,
+    height: 200,
+  },
+  timeContainer: {
     alignItems: 'center',
-    position: 'relative',
-    backgroundColor: Colors.textLight,
+    marginBottom: 40,
   },
-  obooniClock: {
-    width: '90%',
-    height: '90%',
-    resizeMode: 'contain',
-    position: 'absolute',
-  },
-  clockNeedle: {
-    width: '40%',
-    height: '40%',
-    resizeMode: 'contain',
-    position: 'absolute',
-    top: '10%',
-    left: '30%',
-    transformOrigin: 'center center',
-  },
-  timerText: {
-    fontSize: FontSizes.extraLarge * 2, // 폰트 크기 비율에 맞게 약간 조절
+  timeText: {
+    fontSize: FontSizes.extraLarge * 2,
     fontWeight: FontWeights.bold,
     color: Colors.textDark,
-    position: 'absolute',
-  },
-  remainingText: {
-    fontSize: FontSizes.medium,
-    color: Colors.secondaryBrown,
-    marginTop: 10,
-    position: 'absolute',
-    bottom: '20%',
-  },
-  obooniCharacterWrapper: {
-    marginBottom: 30, // 여백 축소
-  },
-  obooniCharacter: {
-    // --- 수정: 동적 크기 적용 ---
-    width: characterSize,
-    height: characterSize,
+    textAlign: 'center',
   },
   nextButton: {
     backgroundColor: Colors.accentApricot,

@@ -28,6 +28,7 @@ const PomodoroTimerScreen = () => {
 
   const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
   const [isRunning, setIsRunning] = useState(false);
+  const [isStarted, setIsStarted] = useState(false); // 타이머가 시작되었는지 여부
   const [isFocusMode, setIsFocusMode] = useState(true);
   const [cycleCount, setCycleCount] = useState(0);
 
@@ -51,23 +52,12 @@ const PomodoroTimerScreen = () => {
 
   // --- 수정: 회전 애니메이션 useEffect 제거 ---
 
-  const handleConfirmReset = useCallback(() => {
+
+  const handleStop = () => {
+    // 타이머 정지하고 완료 페이지로 이동
     setIsRunning(false);
-    setTimeLeft(FOCUS_TIME);
-    setIsFocusMode(true);
-    setCycleCount(0);
-    navigation.goBack();
-  }, [navigation]);
-
-  const handleCancelReset = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
-  const handleReset = () => {
-    navigation.navigate('PomodoroResetConfirmModal', {
-      onConfirm: handleConfirmReset,
-      onCancel: handleCancelReset,
-    });
+    setIsStarted(false);
+    navigation.navigate('PomodoroFinish', { selectedGoal });
   };
 
   const formatTime = (totalSeconds) => {
@@ -77,16 +67,13 @@ const PomodoroTimerScreen = () => {
   };
 
   const handleStartPause = () => {
-    if (isRunning) {
-      navigation.navigate('PomodoroPause', {
-        selectedGoal,
-        timeLeft,
-        isFocusMode,
-        cycleCount,
-      });
-      setIsRunning(false);
-    } else {
+    if (!isStarted) {
+      // 처음 시작
+      setIsStarted(true);
       setIsRunning(true);
+    } else {
+      // 일시정지/재시작
+      setIsRunning(!isRunning);
     }
   };
 
@@ -108,10 +95,22 @@ const PomodoroTimerScreen = () => {
 
   return (
     <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
-      <Header title={t('pomodoro.header')} showBackButton={true} />
+      {/* 커스텀 헤더 */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={20} color={Colors.textDark} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>포모도로 기능</Text>
+        <TouchableOpacity>
+          <FontAwesome5 name="arrow-right" size={20} color={Colors.textDark} />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.goalText}>{selectedGoal.text}</Text>
+        {/* 선택된 목표 버튼 */}
+        <TouchableOpacity style={[styles.selectedGoalButton, { backgroundColor: selectedGoal.color }]}>
+          <Text style={styles.selectedGoalText}>{selectedGoal.text}</Text>
+        </TouchableOpacity>
 
         <View style={[styles.timerCircle, { borderColor: selectedGoal.color }]}>
           {/* --- 수정: 기존 시계 이미지와 침 대신 GIF 이미지로 교체 --- */}
@@ -128,10 +127,14 @@ const PomodoroTimerScreen = () => {
 
         <View style={styles.controlButtons}>
           <TouchableOpacity style={styles.controlButton} onPress={handleStartPause}>
-            <FontAwesome5 name={isRunning ? 'pause' : 'play'} size={30} color={Colors.secondaryBrown} />
+            <FontAwesome5 
+              name={!isStarted ? "play" : (isRunning ? "pause" : "play")} 
+              size={24} 
+              color={Colors.textDark} 
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton} onPress={handleReset}>
-            <FontAwesome5 name="redo" size={30} color={Colors.secondaryBrown} />
+          <TouchableOpacity style={styles.controlButton} onPress={handleStop}>
+            <FontAwesome5 name="stop" size={24} color={Colors.textDark} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -144,18 +147,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primaryBeige,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: Colors.textLight,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 10,
+  },
+  headerTitle: {
+    fontSize: FontSizes.large,
+    fontWeight: FontWeights.bold,
+    color: Colors.textDark,
+  },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  goalText: {
-    fontSize: FontSizes.extraLarge,
-    fontWeight: FontWeights.bold,
-    color: Colors.textDark,
+  selectedGoalButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
     marginBottom: 30,
-    textAlign: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  selectedGoalText: {
+    fontSize: FontSizes.medium,
+    fontWeight: FontWeights.medium,
+    color: Colors.textLight,
   },
   timerCircle: {
     width: 300,
@@ -195,16 +223,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '60%',
+    marginTop: 20,
   },
   controlButton: {
     backgroundColor: Colors.textLight,
-    padding: 20,
-    borderRadius: 15,
+    padding: 15,
+    borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
 

@@ -1,33 +1,43 @@
 // src/screens/GrowthAlbumScreen.jsx
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
 
-// 공통 스타일 및 컴포넌트 임포트
-import { GlobalStyles } from '../../styles/GlobalStyles';
+import Header from '../../components/common/Header';
 import { Colors } from '../../styles/color';
 import { FontSizes, FontWeights } from '../../styles/Fonts';
-import Header from '../../components/common/Header';
-import { useTranslation } from 'react-i18next';
-
-// PhotoUploadModal, GrowthAlbumCalendarView, GrowthAlbumCategoryView 임포트 (아직 생성 안 했지만 미리 선언)
 import PhotoUploadModal from './PhotoUploadModal';
 import GrowthAlbumCalendarView from './GrowthAlbumCalendarView';
 import GrowthAlbumCategoryView from './GrowthAlbumCategoryView';
 
+const initialMockPhotos = {
+  '2025-09-20': [
+    { id: 'p1', uri: 'https://placehold.co/100x100/FFD1DC/000000?text=운동', memo: '오전 운동 후', categoryKey: 'exercise' },
+    { id: 'p2', uri: 'https://placehold.co/100x100/99DDFF/000000?text=개발', memo: 'FIVLO 개발 중', categoryKey: 'study' },
+  ],
+  '2025-09-21': [
+    { id: 'p3', uri: 'https://placehold.co/100x100/FFABAB/000000?text=식사', memo: '건강한 점심', categoryKey: 'daily' },
+  ],
+};
+
 const GrowthAlbumScreen = () => {
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const [activeView, setActiveView] = useState('calendar'); // 'calendar' 또는 'category'
+  const [activeView, setActiveView] = useState('calendar');
   const [isPhotoModalVisible, setIsPhotoModalVisible] = useState(false);
+  const [photos, setPhotos] = useState(initialMockPhotos);
 
-  // Task 완료 시 사진 촬영/갤러리 업로드 팝업 (임시 트리거)
-  const handleTriggerPhotoUpload = () => {
-    setIsPhotoModalVisible(true);
+  const handleSavePhoto = (newPhoto) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const newPhotoWithId = { ...newPhoto, id: `photo-${Date.now()}`, categoryKey: 'exercise' };
+
+    setPhotos(prevPhotos => {
+      const todayPhotos = prevPhotos[today] || [];
+      return { ...prevPhotos, [today]: [...todayPhotos, newPhotoWithId] };
+    });
   };
 
   return (
@@ -35,7 +45,6 @@ const GrowthAlbumScreen = () => {
       <Header title={t('album.header')} showBackButton={true} />
 
       <View style={styles.contentContainer}>
-        {/* 탭바: 캘린더 형식 / 카테고리별 형식 */}
         <View style={styles.viewToggleContainer}>
           <TouchableOpacity
             style={[styles.viewToggleButton, activeView === 'calendar' && styles.viewToggleButtonActive]}
@@ -51,83 +60,38 @@ const GrowthAlbumScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 뷰에 따라 다른 컴포넌트 렌더링 */}
         {activeView === 'calendar' ? (
-          <GrowthAlbumCalendarView />
+          <GrowthAlbumCalendarView photos={photos} />
         ) : (
-          <GrowthAlbumCategoryView />
+          <GrowthAlbumCategoryView photos={photos} />
         )}
-
-        {/* 테스트용 사진 업로드 트리거 버튼 (실제로는 Task 완료 시 호출) */}
-        <TouchableOpacity style={styles.testPhotoButton} onPress={handleTriggerPhotoUpload}>
+        
+        <TouchableOpacity style={styles.testPhotoButton} onPress={() => setIsPhotoModalVisible(true)}>
           <Text style={styles.testPhotoButtonText}>{t('album.test_upload')}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 사진 촬영/갤러리 업로드 모달 */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isPhotoModalVisible}
-        onRequestClose={() => setIsPhotoModalVisible(false)}
-      >
-        <PhotoUploadModal onClose={() => setIsPhotoModalVisible(false)} />
-      </Modal>
+      {isPhotoModalVisible && (
+        <PhotoUploadModal 
+          visible={isPhotoModalVisible}
+          onClose={() => setIsPhotoModalVisible(false)} 
+          onSave={handleSavePhoto} 
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: Colors.primaryBeige,
-  },
-  contentContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-  },
-  viewToggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: Colors.textLight,
-    borderRadius: 15,
-    marginBottom: 20,
-    width: '95%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  viewToggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 15,
-  },
-  viewToggleButtonActive: {
-    backgroundColor: Colors.accentApricot,
-  },
-  viewButtonText: {
-    fontSize: FontSizes.medium,
-    color: Colors.secondaryBrown,
-    fontWeight: FontWeights.medium,
-  },
-  viewButtonTextActive: {
-    color: Colors.textLight,
-    fontWeight: FontWeights.bold,
-  },
-  testPhotoButton: {
-    backgroundColor: Colors.secondaryBrown,
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  testPhotoButtonText: {
-    color: Colors.textLight,
-    fontSize: FontSizes.small,
-  },
+  screenContainer: { flex: 1, backgroundColor: Colors.primaryBeige },
+  contentContainer: { flex: 1, alignItems: 'center', paddingTop: 10 },
+  viewToggleContainer: { flexDirection: 'row', backgroundColor: Colors.textLight, borderRadius: 15, marginBottom: 20, width: '95%', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  viewToggleButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 15 },
+  viewToggleButtonActive: { backgroundColor: Colors.accentApricot },
+  viewButtonText: { fontSize: FontSizes.medium, color: Colors.secondaryBrown, fontWeight: FontWeights.medium },
+  viewButtonTextActive: { color: Colors.textLight, fontWeight: FontWeights.bold },
+  testPhotoButton: { position: 'absolute', bottom: 20, right: 20, backgroundColor: Colors.accentApricot, padding: 15, borderRadius: 30, elevation: 5 },
+  testPhotoButtonText: { color: Colors.textLight, fontSize: FontSizes.small, fontWeight: FontWeights.bold },
 });
 
 export default GrowthAlbumScreen;

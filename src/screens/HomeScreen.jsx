@@ -26,9 +26,10 @@ const HomeScreen = ({ isPremiumUser }) => {
   const [showCoinGrantModal, setShowCoinGrantModal] = useState(false);
 
   const mockTasks = [
-    { id: '1', text: '오전 운동 (30분)', completed: false, category: '운동' },
-    { id: '2', text: '책 10페이지 읽기', completed: false, category: '독서' },
-    { id: '3', text: 'FIVLO 앱 개발하기', completed: true, category: '공부' },
+    { id: '1', text: t('task_calendar.sample_tasks.water'), completed: false, category: t('home.categories.daily'), color: Colors.primaryBeige },
+    { id: '2', text: t('task_calendar.sample_tasks.morning_exercise'), completed: false, category: t('home.categories.exercise'), color: '#FFABAB' },
+    { id: '3', text: t('task_calendar.sample_tasks.app_dev'), completed: false, category: t('home.categories.reading'), color: '#99DDFF' },
+    { id: '4', text: t('task_calendar.sample_tasks.app_dev'), completed: true, category: t('home.categories.study'), color: '#A0FFC3' },
   ];
 
   useEffect(() => {
@@ -61,7 +62,7 @@ const HomeScreen = ({ isPremiumUser }) => {
   };
 
   const goToTaskDetail = (task) => {
-    Alert.alert('할 일 상세', `${task.text} 항목 수정 화면으로 이동합니다.`);
+    Alert.alert(t('core.home.task_detail'), t('core.home.task_detail_message'));
   };
 
   const handleGoToTaskCalendar = () => {
@@ -101,7 +102,7 @@ const HomeScreen = ({ isPremiumUser }) => {
             <Text style={styles.dateNavButtonText}>{'<'}</Text>
           </TouchableOpacity>
           <Text style={styles.currentDateText}>
-            {format(currentDate, 'yyyy년 MM월 dd일 EEEE', { locale: ko })}
+            {format(currentDate, t('calendar.date_format'), { locale: ko })}
           </Text>
           <TouchableOpacity onPress={goToNextDay} style={styles.dateNavButton}>
             <Text style={styles.dateNavButtonText}>{'>'}</Text>
@@ -123,7 +124,12 @@ const HomeScreen = ({ isPremiumUser }) => {
         </TouchableOpacity>
 
         <View style={styles.taskListContainer}>
-          <Text style={styles.taskListTitle}>{t('home.today_tasks')}</Text>
+          <View style={styles.taskListHeader}>
+            <Text style={styles.taskListTitle}>{t('home.today_tasks')}</Text>
+            <TouchableOpacity onPress={handleGoToTaskCalendar} style={styles.addTaskButton}>
+              <FontAwesome name="plus" size={20} color={Colors.textLight} />
+            </TouchableOpacity>
+          </View>
           {tasks.length > 0 ? (
             <FlatList
               data={tasks}
@@ -224,11 +230,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     elevation: 3,
   },
+  taskListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   taskListTitle: {
     fontSize: FontSizes.large,
     fontWeight: FontWeights.bold,
     color: Colors.textDark,
-    marginBottom: 15,
+  },
+  addTaskButton: {
+    backgroundColor: Colors.accentApricot,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   taskItem: {
     flexDirection: 'row',

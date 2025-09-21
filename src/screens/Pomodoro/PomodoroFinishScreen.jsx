@@ -1,7 +1,7 @@
 // src/screens/PomodoroFinishScreen.jsx
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, Modal, ScrollView } from 'react-native'; // ScrollView 임포트 추가!
+import { View, Text, StyleSheet, Image, Modal, ScrollView, Alert } from 'react-native'; // ScrollView 임포트 추가!
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

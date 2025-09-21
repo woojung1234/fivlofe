@@ -10,7 +10,7 @@ import { FontSizes, FontWeights } from '../../styles/Fonts';
 import Button from '../../components/common/Button';
 import { useTranslation } from 'react-i18next';
 
-const TaskCompleteCoinModal = ({ isVisible, onClose }) => {
+const TaskCompleteCoinModal = ({ isVisible, onClose, taskText, earnedCoins = 10 }) => {
   const navigation = useNavigation();
   const { t } = useTranslation();
 
@@ -23,11 +23,25 @@ const TaskCompleteCoinModal = ({ isVisible, onClose }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
-          <Image source={require('../../../assets/coin.png')} style={styles.obooniImage} />
-          <Text style={styles.messageText}>
-            {t('task.complete_coin')}
+          {/* 오분이 캐릭터 */}
+          <Image source={require('../../../assets/기본오분이.png')} style={styles.obooniImage} />
+          
+          {/* 완료 메시지 */}
+          <Text style={styles.completeMessage}>
+            {t('task_complete.complete_message', { taskText })}
           </Text>
-          <Button title={t('task.ok')} onPress={onClose} style={styles.confirmButton} />
+          
+          {/* 코인 지급 */}
+          <View style={styles.coinContainer}>
+            <Image source={require('../../../assets/coin.png')} style={styles.coinImage} />
+            <Text style={styles.coinText}>+{earnedCoins}</Text>
+          </View>
+          
+          <Text style={styles.encourageMessage}>
+            {t('task_complete.encourage_message')}
+          </Text>
+          
+          <Button title={t('task_complete.confirm')} onPress={onClose} style={styles.confirmButton} />
         </View>
       </View>
     </Modal>
@@ -54,17 +68,39 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   obooniImage: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    width: 120,
+    height: 120,
+    marginBottom: 15,
+    resizeMode: 'contain',
   },
-  messageText: {
+  completeMessage: {
     fontSize: FontSizes.large,
     fontWeight: FontWeights.bold,
     color: Colors.textDark,
     textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 28,
+    marginBottom: 20,
+  },
+  coinContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  coinImage: {
+    width: 30,
+    height: 30,
+    marginRight: 10,
+  },
+  coinText: {
+    fontSize: FontSizes.extraLarge,
+    fontWeight: FontWeights.bold,
+    color: Colors.accentApricot,
+  },
+  encourageMessage: {
+    fontSize: FontSizes.medium,
+    color: Colors.secondaryBrown,
+    textAlign: 'center',
+    marginBottom: 25,
   },
   confirmButton: {
     width: '70%',

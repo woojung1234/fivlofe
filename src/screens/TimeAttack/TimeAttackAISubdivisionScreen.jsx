@@ -13,12 +13,14 @@ import { FontSizes, FontWeights } from '../../styles/Fonts'; // <-- 사용자님
 import Header from '../../components/common/Header';
 import Button from '../../components/common/Button';
 import CharacterImage from '../../components/common/CharacterImage';
+import { useTranslation } from 'react-i18next';
 
 
 const TimeAttackAISubdivisionScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const { selectedGoal, totalMinutes } = route.params;
 
@@ -34,13 +36,12 @@ const TimeAttackAISubdivisionScreen = () => {
     // AI 세분화 로직 시뮬레이션
     setTimeout(() => {
       const generatedTasks = [
-        { id: 't1', text: '머리 감기', time: 5, unit: '분', editable: true },
-        { id: 't2', text: '샤워하기', time: 10, unit: '분', editable: true },
-        { id: 't3', text: '옷 입기', time: 5, unit: '분', editable: true },
-        { id: 't4', text: '아침 식사', time: 15, unit: '분', editable: true },
-        { id: 't5', text: '쓰레기 버리기', time: 3, unit: '분', editable: true },
-        { id: 't6', text: '출근 준비', time: 10, unit: '분', editable: true },
-        { id: 't7', text: '준비 완료', time: 0, unit: '분', editable: false }, // 마지막 단계
+        { id: 't1', text: t('time_attack_ai.ai_generated_tasks.hair_wash'), time: 5, unit: t('time_attack_ai.minute_unit'), editable: true },
+        { id: 't2', text: t('time_attack_ai.ai_generated_tasks.shower'), time: 10, unit: t('time_attack_ai.minute_unit'), editable: true },
+        { id: 't3', text: t('time_attack_ai.ai_generated_tasks.get_dressed'), time: 5, unit: t('time_attack_ai.minute_unit'), editable: true },
+        { id: 't4', text: t('time_attack_ai.ai_generated_tasks.breakfast'), time: 15, unit: t('time_attack_ai.minute_unit'), editable: true },
+        { id: 't5', text: t('time_attack_ai.ai_generated_tasks.trash'), time: 3, unit: t('time_attack_ai.minute_unit'), editable: true },
+        { id: 't6', text: t('time_attack_ai.ai_generated_tasks.work_prep'), time: 10, unit: t('time_attack_ai.minute_unit'), editable: true },
       ];
       setSubdividedTasks(generatedTasks);
       setIsLoadingAI(false);
@@ -54,24 +55,6 @@ const TimeAttackAISubdivisionScreen = () => {
     setIsEditingTask(true);
   };
 
-  const handleSaveEditedTask = () => {
-    const time = parseInt(editedTaskTime, 10);
-    if (isNaN(time) || time < 0) {
-      Alert.alert('알림', '유효한 시간을 입력해주세요.');
-      return;
-    }
-    setSubdividedTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === currentEditingTask.id ? { ...task, text: editedTaskText, time: time } : task
-      )
-    );
-    setIsEditingTask(false);
-    setCurrentEditingTask(null);
-    setEditedTaskText('');
-    setEditedTaskTime('');
-    Alert.alert('저장 완료', '일정이 수정되었습니다.');
-  };
-
   const handleCancelEdit = () => {
     setIsEditingTask(false);
     setCurrentEditingTask(null);
@@ -79,51 +62,96 @@ const TimeAttackAISubdivisionScreen = () => {
     setEditedTaskTime('');
   };
 
+
+  const handleAddNewTask = () => {
+    setCurrentEditingTask({ id: 'new', text: '', time: 5 });
+    setEditedTaskText('');
+    setEditedTaskTime('5');
+    setIsEditingTask(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editedTaskText.trim() && editedTaskTime.trim()) {
+      if (currentEditingTask.id === 'new') {
+        // 새 태스크 추가
+        const newTask = {
+          id: `t${Date.now()}`,
+          text: editedTaskText.trim(),
+          time: parseInt(editedTaskTime),
+          unit: t('time_attack_ai.minute_unit'),
+          editable: true
+        };
+        setSubdividedTasks(prevTasks => [...prevTasks, newTask]);
+      } else {
+        // 기존 태스크 수정
+        const updatedTasks = subdividedTasks.map(task => 
+          task.id === currentEditingTask.id 
+            ? { ...task, text: editedTaskText.trim(), time: parseInt(editedTaskTime) }
+            : task
+        );
+        setSubdividedTasks(updatedTasks);
+      }
+      setIsEditingTask(false);
+      setCurrentEditingTask(null);
+      setEditedTaskText('');
+      setEditedTaskTime('');
+    }
+  };
+
   const handleStartAttack = () => {
-    Alert.alert('타임어택 시작', '세분화된 목표로 타임어택을 시작합니다!');
+    Alert.alert(t('time_attack_ai.start_attack'), t('time_attack_ai.start_attack_alert'));
     navigation.navigate('TimeAttackInProgress', { selectedGoal, subdividedTasks });
   };
 
-  const renderSubdividedTaskItem = ({ item }) => (
-    <View style={styles.taskItem}>
-      <Text style={styles.taskText}>{item.text}</Text>
-      <View style={styles.taskTimeContainer}>
-        {item.editable ? (
-          <TouchableOpacity onPress={() => handleEditTask(item)} style={styles.editTimeButton}>
-            <Text style={styles.editTimeButtonText}>{item.time} {item.unit}</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={styles.staticTimeText}>{item.time} {item.unit}</Text>
-        )}
-        <TouchableOpacity onPress={() => handleEditTask(item)} style={styles.editIcon}>
-          <FontAwesome5 name="edit" size={18} color={Colors.secondaryBrown} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const handleDeleteTask = (taskId) => {
+    Alert.alert(
+      t('time_attack_ai.delete_task_title'),
+      t('time_attack_ai.delete_task_message'),
+      [
+        { text: t('time_attack_ai.cancel'), style: 'cancel' },
+        { 
+          text: t('time_attack_ai.delete'), 
+          style: 'destructive',
+          onPress: () => setSubdividedTasks(prevTasks => prevTasks.filter(task => task.id !== taskId))
+        }
+      ]
+    );
+  };
+
 
   return (
     <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
-      <Header title="타임어택 기능" showBackButton={true} />
+      <Header title={t('headers.time_attack')} showBackButton={true} />
 
       <ScrollView contentContainerStyle={styles.scrollViewContentContainer}>
         {isLoadingAI ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.secondaryBrown} />
-            <Text style={styles.loadingText}>오분이가 당신을 위한{"\n"}40분 타임어택을 만들어요!</Text>
+            <Text style={styles.loadingText}>{t('time_attack_ai.loading_message')}</Text>
           </View>
         ) : (
           <>
-            <Text style={styles.sectionTitle}>오분이가 당신을 위한{"\n"}40분 타임어택을 만들었어요!</Text>
-            <FlatList
-              data={subdividedTasks}
-              renderItem={renderSubdividedTaskItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false} // 부모 ScrollView가 스크롤 담당
-              contentContainerStyle={styles.flatListContent}
-            />
+            <Text style={styles.sectionTitle}>{t('time_attack_ai.complete_message')}</Text>
+            {subdividedTasks.length > 0 ? (
+              subdividedTasks.map((item) => (
+                <TouchableOpacity key={item.id} style={styles.taskItem} onPress={() => handleEditTask(item)}>
+                  <Text style={styles.taskText}>{item.text} - {item.time}분</Text>
+                  <TouchableOpacity onPress={() => handleDeleteTask(item.id)} style={styles.deleteButton}>
+                    <FontAwesome5 name="times" size={16} color={Colors.textDark} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>{t('time_attack_ai.no_tasks')}</Text>
+            )}
+            
+            {/* 추가 버튼 */}
+            <TouchableOpacity style={styles.addTaskButton} onPress={handleAddNewTask}>
+              <FontAwesome5 name="plus" size={24} color={Colors.textDark} />
+            </TouchableOpacity>
+            
             <Button
-              title="타임어택 시작"
+              title={t('time_attack_ai.start_attack')}
               onPress={handleStartAttack}
               style={styles.startButton}
             />
@@ -140,13 +168,15 @@ const TimeAttackAISubdivisionScreen = () => {
       >
         <View style={styles.editModalOverlay}>
           <View style={styles.editModalContent}>
-            <Text style={styles.editModalTitle}>시간 수정</Text>
+            <Text style={styles.editModalTitle}>
+              {currentEditingTask?.id === 'new' ? t('time_attack_ai.add_new_task') : t('time_attack_ai.edit_task')}
+            </Text>
             <View style={styles.editModalInputContainer}>
               <TextInput
                 style={styles.editModalTextInput}
                 value={editedTaskText}
                 onChangeText={setEditedTaskText}
-                placeholder="목표 내용"
+                placeholder={t('time_attack_ai.task_content_placeholder')}
               />
               <TextInput
                 style={styles.editModalTimeInput}
@@ -154,13 +184,13 @@ const TimeAttackAISubdivisionScreen = () => {
                 onChangeText={(text) => setEditedTaskTime(text.replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={3}
-                placeholder="분"
+                placeholder={t('time_attack_ai.minute_placeholder')}
               />
-              <Text style={styles.editModalTimeUnit}>분</Text>
+              <Text style={styles.editModalTimeUnit}>{t('time_attack_ai.minute_unit')}</Text>
             </View>
             <View style={styles.editModalButtons}>
-              <Button title="취소" onPress={handleCancelEdit} primary={false} style={styles.editModalButton} />
-              <Button title="저장" onPress={handleSaveEditedTask} style={styles.editModalButton} />
+              <Button title={t('time_attack_ai.cancel')} onPress={handleCancelEdit} primary={false} style={styles.editModalButton} />
+              <Button title={t('time_attack_ai.save')} onPress={handleSaveEdit} style={styles.editModalButton} />
             </View>
           </View>
         </View>
@@ -208,54 +238,61 @@ const styles = StyleSheet.create({
   flatListContent: {
     width: '100%',
   },
+  emptyText: {
+    textAlign: 'center',
+    color: Colors.textDark,
+    fontSize: FontSizes.medium,
+    marginTop: 20,
+  },
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: Colors.textLight,
     borderRadius: 10,
-    paddingVertical: 15,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    minHeight: 70,
+  },
+  taskText: {
+    fontSize: FontSizes.medium,
+    color: Colors.textDark,
+    flex: 1,
+    marginRight: 20,
+    lineHeight: 24,
+    flexWrap: 'wrap',
+  },
+  deleteButton: {
+    padding: 6,
+    backgroundColor: Colors.primaryBeige,
+    borderRadius: 4,
+    minWidth: 28,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  addTaskButton: {
+    backgroundColor: Colors.textLight,
+    borderRadius: 10,
+    paddingVertical: 20,
     paddingHorizontal: 15,
-    marginBottom: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
-  taskText: {
-    fontSize: FontSizes.medium,
-    color: Colors.textDark,
-    flex: 1,
-    marginRight: 10,
-  },
-  taskTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  editTimeButton: {
-    backgroundColor: Colors.primaryBeige,
-    borderRadius: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginRight: 10,
-  },
-  editTimeButtonText: {
-    fontSize: FontSizes.small,
-    color: Colors.secondaryBrown,
-    fontWeight: FontWeights.bold,
-  },
-  staticTimeText: {
-    fontSize: FontSizes.small,
-    color: Colors.secondaryBrown,
-    fontWeight: FontWeights.bold,
-    marginRight: 10,
-  },
-  editIcon: {
-    padding: 5,
-  },
   startButton: {
-    marginTop: 30,
+    marginTop: 10,
     width: '100%',
   },
   // 수정 모달 스타일

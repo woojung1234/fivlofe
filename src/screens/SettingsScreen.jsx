@@ -1,7 +1,7 @@
 // src/screens/SettingsScreen.jsx
 
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import Header from '../components/common/Header';
 import { Colors } from '../styles/color';
 import { FontSizes, FontWeights } from '../styles/Fonts';
@@ -11,84 +11,106 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n';
 
-const SettingsScreen = ({ isPremiumUser: initialIsPremiumUser }) => {
+const SettingsScreen = ({ initialIsPremiumUser = true }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
-  const [isPremiumUser, setIsPremiumUser] = useState(initialIsPremiumUser || false);
 
-  // --- 수정: '계정 관리' 옵션을 메뉴 리스트에서 제거 ---
-  const settingsOptions = useMemo(() => ([
-    { id: '1', name: t('settings.notification_settings'), screen: 'Reminder' },
-    { id: '3', name: t('settings.obooni_customization'), screen: 'ObooniCustomization' },
-    { id: '4', name: t('settings.terms_of_service'), screen: 'TermsOfService' },
-    { id: '5', name: t('settings.privacy_policy'), screen: 'PrivacyPolicy' },
-    { id: '6', name: t('settings.version_info'), screen: 'VersionInfo' },
-  ]), [i18n.language]);
+  const [isPremiumUser, setIsPremiumUser] = useState(initialIsPremiumUser);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
 
-  const handleOptionPress = (option) => {
-    if (option.screen === 'ObooniCustomization') {
-      navigation.navigate('ObooniCustomization', { isPremiumUser: isPremiumUser });
-    } else if (option.screen) {
-      Alert.alert(t('alerts.navigate'), t('alerts.move_to_page', { name: option.name }));
-    } else {
-      Alert.alert(t('alerts.navigate'), t('alerts.feature_not_implemented', { name: option.name }));
-    }
-  };
+  // ✨ 수정: 'ProfileSettings' 대신 'AccountManagement'로 이동하도록 경로를 바로잡았습니다.
+  const handleProfilePress = () => navigation.navigate('AccountManagement');
   
-  // --- 추가: 계정 관리 화면으로 이동하는 핸들러 ---
-  const handleAccountManagement = () => {
-    navigation.navigate('AccountManagement');
+  const handlePremiumPress = () => navigation.navigate('PremiumMembership');
+  const handleInfoPress = () => navigation.navigate('Information');
+  const handleReportPress = () => navigation.navigate('Report');
+  
+  const handleSelectLanguage = (lang) => {
+    changeLanguage(lang);
+    setIsLanguageExpanded(false);
   };
-
-  const renderSettingItem = ({ item }) => (
-    <TouchableOpacity style={styles.settingItem} onPress={() => handleOptionPress(item)}>
-      <Text style={styles.settingItemText}>{item.name}</Text>
-      <FontAwesome5 name="chevron-right" size={18} color={Colors.secondaryBrown} />
-    </TouchableOpacity>
-  );
 
   return (
-    <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
+    <View style={[styles.screenContainer, { paddingTop: insets.top }]}>
       <Header title={t('settings.title')} showBackButton={true} />
       
       <ScrollView contentContainerStyle={styles.scrollViewContentContainer}>
-        {/* --- 추가: 회원정보 프로필 섹션 --- */}
-        <TouchableOpacity style={styles.profileContainer} onPress={handleAccountManagement}>
-          <Image 
-            source={require('../../assets/images/obooni_default.png')} // 프로필 이미지 예시
-            style={styles.profileImage}
-          />
+        {/* 프로필 섹션 */}
+        <TouchableOpacity style={styles.profileContainer} onPress={handleProfilePress}>
+          <FontAwesome5 name="user-circle" size={48} color={Colors.secondaryBrown} style={styles.profileIcon} />
           <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>오분이</Text>
-            <Text style={styles.profileEmail}>obooni@fivlo.com</Text>
+            <Text style={styles.profileName}>{t('settings.profile_name', '이름')}</Text>
+            {isPremiumUser ? (
+              <View style={styles.premiumInfoContainer}>
+                <Text style={styles.profileStatusPremium}>{t('settings.premium_account', '프리미엄 계정')}</Text>
+                <FontAwesome5 name="coins" size={12} color="#FFC700" style={{ marginRight: 4 }}/>
+                <Text style={styles.profileCoins}>{t('settings.coins_owned', { count: 5 })}</Text>
+              </View>
+            ) : (
+              <Text style={styles.profileStatusNormal}>{t('settings.normal_account', '일반계정')}</Text>
+            )}
           </View>
-          <FontAwesome5 name="chevron-right" size={18} color={Colors.secondaryBrown} />
         </TouchableOpacity>
 
-        {/* --- 수정: 기존 FlatList를 View로 감싸서 UI 분리 --- */}
+        {/* 설정 목록 */}
         <View style={styles.settingsListContainer}>
+          {/* 알림 */}
           <View style={styles.settingItem}>
-            <Text style={styles.settingItemText}>{t('settings.language')}</Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity onPress={() => changeLanguage('ko')}>
-                <Text style={[styles.settingItemText, { color: i18n.language === 'ko' ? Colors.accentApricot : Colors.textDark }]}>
-                  {t('settings.language_korean')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => changeLanguage('en')}>
-                <Text style={[styles.settingItemText, { color: i18n.language === 'en' ? Colors.accentApricot : Colors.textDark }]}>
-                  {t('settings.language_english')}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.settingItemText}>{t('settings.notifications', '알림')}</Text>
+            <Switch
+              trackColor={{ false: '#767577', true: Colors.accentApricot }}
+              thumbColor={Colors.textLight}
+              onValueChange={() => setNotificationsEnabled(previousState => !previousState)}
+              value={notificationsEnabled}
+            />
           </View>
-          <FlatList
-            data={settingsOptions}
-            renderItem={renderSettingItem}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
-          />
+
+          {/* 언어 */}
+          <View>
+            <TouchableOpacity style={styles.settingItem} onPress={() => setIsLanguageExpanded(!isLanguageExpanded)}>
+              <Text style={styles.settingItemText}>{t('settings.language', '언어')}</Text>
+              <View style={styles.languagePicker}>
+                <FontAwesome5 name="globe" size={16} color={Colors.secondaryBrown} style={{ marginRight: 8 }}/>
+                <Text style={styles.settingItemText}>{i18n.language === 'ko' ? t('settings.language_korean') : t('settings.language_english')}</Text>
+                <FontAwesome5 name={isLanguageExpanded ? "chevron-up" : "chevron-down"} size={14} color={Colors.secondaryBrown} style={{ marginLeft: 8 }}/>
+              </View>
+            </TouchableOpacity>
+
+            {isLanguageExpanded && (
+              <View style={styles.languageExpandedContainer}>
+                <TouchableOpacity style={styles.languageOptionButton} onPress={() => handleSelectLanguage('ko')}>
+                  <Text style={[styles.languageOptionText, i18n.language === 'ko' && styles.languageOptionTextActive]}>
+                    {t('settings.language_korean')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.languageOptionButton} onPress={() => handleSelectLanguage('en')}>
+                  <Text style={[styles.languageOptionText, i18n.language === 'en' && styles.languageOptionTextActive]}>
+                    {t('settings.language_english')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* FIVLO 프리미엄 멤버십 */}
+          <TouchableOpacity style={styles.settingItem} onPress={handlePremiumPress}>
+            <Text style={styles.settingItemText}>{t('settings.premium_membership', 'FIVLO 프리미엄 멤버십')}</Text>
+            <FontAwesome5 name="chevron-right" size={16} color={Colors.secondaryBrown} />
+          </TouchableOpacity>
+
+          {/* 정보 */}
+          <TouchableOpacity style={styles.settingItem} onPress={handleInfoPress}>
+            <Text style={styles.settingItemText}>{t('settings.information', '정보')}</Text>
+            <FontAwesome5 name="chevron-right" size={16} color={Colors.secondaryBrown} />
+          </TouchableOpacity>
+
+          {/* 신고하기 */}
+          <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={handleReportPress}>
+            <Text style={styles.settingItemText}>{t('settings.report', '신고하기')}</Text>
+            <FontAwesome5 name="chevron-right" size={16} color={Colors.secondaryBrown} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -101,28 +123,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primaryBeige,
   },
   scrollViewContentContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    paddingTop: 10,
+    padding: 20,
   },
-  // --- 추가: 프로필 섹션 스타일 ---
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.textLight,
     borderRadius: 15,
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
     marginBottom: 20,
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
   },
-  profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  profileIcon: {
     marginRight: 15,
   },
   profileTextContainer: {
@@ -132,35 +149,78 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.large,
     fontWeight: FontWeights.bold,
     color: Colors.textDark,
+    marginBottom: 6,
   },
-  profileEmail: {
-    fontSize: FontSizes.small,
+  profileStatusNormal: {
+    fontSize: FontSizes.medium,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
+  },
+  premiumInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileStatusPremium: {
+    fontSize: FontSizes.medium,
     color: Colors.secondaryBrown,
-    marginTop: 5,
+    marginRight: 10,
   },
-  // --- 수정: 기존 리스트 컨테이너 이름 변경 ---
+  profileCoins: {
+    fontSize: FontSizes.medium,
+    color: Colors.secondaryBrown,
+    fontWeight: FontWeights.medium,
+  },
   settingsListContainer: {
     backgroundColor: Colors.textLight,
     borderRadius: 15,
-    overflow: 'hidden', // borderBottomWidth가 컨테이너 밖으로 나가지 않도록
-    elevation: 3,
+    overflow: 'hidden',
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: Colors.primaryBeige,
   },
   settingItemText: {
     fontSize: FontSizes.medium,
     color: Colors.textDark,
+    fontWeight: FontWeights.regular,
+  },
+  languagePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryBeige,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.secondaryBrown,
+  },
+  languageExpandedContainer: {
+    backgroundColor: Colors.primaryBeige,
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.primaryBeige,
+  },
+  languageOptionButton: {
+    paddingVertical: 12,
+  },
+  languageOptionText: {
+    fontSize: FontSizes.medium,
+    color: Colors.secondaryBrown,
+  },
+  languageOptionTextActive: {
+    color: Colors.accentApricot,
+    fontWeight: FontWeights.bold,
   },
 });
 

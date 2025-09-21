@@ -1,10 +1,11 @@
 // src/screens/TaskDetailModal.jsx
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, Alert, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, Alert, FlatList, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 // 공통 스타일 및 컴포넌트 임포트
 import { Colors } from '../../styles/color';
@@ -12,9 +13,10 @@ import { FontSizes, FontWeights } from '../../styles/Fonts';
 import Button from '../../components/common/Button';
 import { useTranslation } from 'react-i18next';
 
-// TaskEditModal, TaskDeleteConfirmModal 임포트 (아직 생성 안 했지만 미리 선언)
+// TaskEditModal, TaskDeleteConfirmModal, TaskCompleteCoinModal 임포트
 import TaskEditModal from './TaskEditModal';
 import TaskDeleteConfirmModal from './TaskDeleteConfirmModal';
+import TaskCompleteCoinModal from './TaskCompleteCoinModal';
 
 const TaskDetailModal = ({ selectedDate, tasks, onClose }) => {
   const navigation = useNavigation();
@@ -25,12 +27,43 @@ const TaskDetailModal = ({ selectedDate, tasks, onClose }) => {
 
   const [isDeleteConfirmModalVisible, setIsDeleteConfirmModalVisible] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null); // 삭제할 Task
+  
+  const [isCoinModalVisible, setIsCoinModalVisible] = useState(false);
+  const [completedTask, setCompletedTask] = useState(null); // 완료된 Task
 
   // Task 완료 체크 토글
   const toggleTaskCompletion = (id) => {
-    Alert.alert('Task', t('task.toggle_complete_info'));
-    // 실제로는 백엔드 업데이트 및 TaskCompleteCoinModal 띄우기
+    const task = tasks.find(t => t.id === id);
+    if (task && !task.completed) {
+      // 성장앨범 연동이 체크되어 있으면 사진 촬영 모달 먼저 표시
+      if (task.isAlbumLinked) {
+        // 사진 촬영 모달 표시 (추후 구현)
+        Alert.alert(t('album.photo_confirm_title'), t('album.photo_confirm_message'), [
+          { text: t('album.later'), onPress: () => showCoinModal(task) },
+          { text: t('album.take_photo'), onPress: () => {
+            // 사진 촬영 모달 표시
+            showPhotoModal(task);
+          }},
+        ]);
+      } else {
+        // 일반 Task 완료 시 코인 모달 표시
+        showCoinModal(task);
+      }
+    }
+    // 실제로는 백엔드 업데이트
     // onTaskUpdated(updatedTasks); // 부모 컴포넌트에 업데이트된 Task 전달
+  };
+
+  const showCoinModal = (task) => {
+    setCompletedTask(task);
+    setIsCoinModalVisible(true);
+  };
+
+  const showPhotoModal = (task) => {
+    // 사진 촬영 모달 표시 (추후 구현)
+    Alert.alert('사진 촬영', '사진 촬영 기능을 구현하겠습니다.');
+    // 임시로 코인 모달 표시
+    showCoinModal(task);
   };
 
   // Task 추가 버튼 클릭
@@ -55,7 +88,11 @@ const TaskDetailModal = ({ selectedDate, tasks, onClose }) => {
 
   // Task 삭제 확인 모달에서 '예' 클릭 시
   const onConfirmDelete = (deleteFutureTasks) => {
-    Alert.alert(t('task.delete_title'), t('task.delete_message', { text: taskToDelete.text }));
+    if (deleteFutureTasks) {
+      Alert.alert('삭제 완료', `"${taskToDelete.text}"와 미래 예정된 모든 반복 Task가 삭제되었습니다.`);
+    } else {
+      Alert.alert('삭제 완료', `"${taskToDelete.text}"가 삭제되었습니다.`);
+    }
     // 실제로는 백엔드에서 Task 삭제
     setIsDeleteConfirmModalVisible(false);
     setTaskToDelete(null);
@@ -76,35 +113,105 @@ const TaskDetailModal = ({ selectedDate, tasks, onClose }) => {
     onClose(); // 모달 닫기
   };
 
-  // Task 항목 렌더링
-  const renderTaskItem = ({ item }) => (
-    <View style={styles.taskItem}>
-      <TouchableOpacity
-        style={styles.checkbox}
-        onPress={() => toggleTaskCompletion(item.id)}
-      >
-        <Text style={item.completed ? styles.checkboxChecked : styles.checkboxUnchecked}>
-          {item.completed ? '✔' : '☐'}
-        </Text>
-      </TouchableOpacity>
-      <Text style={[styles.taskText, item.completed && styles.taskTextCompleted]}>
-        {item.text}
-      </Text>
-      <View style={styles.taskActions}>
-        <TouchableOpacity onPress={() => handleEditTask(item)} style={styles.actionIcon}>
-          <FontAwesome5 name="pen" size={18} color={Colors.secondaryBrown} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDeleteTask(item)} style={styles.actionIcon}>
-          <FontAwesome5 name="trash-alt" size={18} color={Colors.secondaryBrown} />
-        </TouchableOpacity>
-      </View>
-      {item.category && (
-        <View style={[styles.categoryTag, { backgroundColor: item.color || Colors.primaryBeige }]}>
-          <Text style={styles.categoryText}>{item.category}</Text>
+  // 스와이프 가능한 Task 항목 컴포넌트
+  const SwipeableTaskItem = ({ item }) => {
+    const translateX = new Animated.Value(0);
+    const [isSwipeOpen, setIsSwipeOpen] = useState(false);
+
+    const onGestureEvent = Animated.event(
+      [{ nativeEvent: { translationX: translateX } }],
+      { useNativeDriver: true }
+    );
+
+    const onHandlerStateChange = (event) => {
+      if (event.nativeEvent.state === State.END) {
+        const { translationX } = event.nativeEvent;
+        
+        if (translationX < -100) {
+          // 왼쪽으로 스와이프 - 액션 버튼 표시
+          Animated.spring(translateX, {
+            toValue: -120,
+            useNativeDriver: true,
+          }).start();
+          setIsSwipeOpen(true);
+        } else {
+          // 원래 위치로 복귀
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+          setIsSwipeOpen(false);
+        }
+      }
+    };
+
+    const closeSwipe = () => {
+      Animated.spring(translateX, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+      setIsSwipeOpen(false);
+    };
+
+    return (
+      <View style={styles.swipeContainer}>
+        {/* 액션 버튼들 (뒤쪽) */}
+        <View style={styles.swipeActions}>
+          <TouchableOpacity 
+            style={[styles.swipeAction, styles.editAction]} 
+            onPress={() => {
+              closeSwipe();
+              handleEditTask(item);
+            }}
+          >
+            <FontAwesome5 name="pen" size={18} color={Colors.textLight} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.swipeAction, styles.deleteAction]} 
+            onPress={() => {
+              closeSwipe();
+              handleDeleteTask(item);
+            }}
+          >
+            <FontAwesome5 name="trash-alt" size={18} color={Colors.textLight} />
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
-  );
+
+        {/* Task 아이템 (앞쪽) */}
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onHandlerStateChange}
+        >
+          <Animated.View 
+            style={[
+              styles.taskItem,
+              { transform: [{ translateX }] }
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.checkbox}
+              onPress={() => toggleTaskCompletion(item.id)}
+            >
+              <Text style={item.completed ? styles.checkboxChecked : styles.checkboxUnchecked}>
+                {item.completed ? '✔' : '☐'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.taskText, item.completed && styles.taskTextCompleted]}>
+              {item.text}
+            </Text>
+            {item.category && (
+              <View style={[styles.categoryTag, { backgroundColor: item.color || Colors.primaryBeige }]}>
+                <Text style={styles.categoryText}>{item.category}</Text>
+              </View>
+            )}
+          </Animated.View>
+        </PanGestureHandler>
+      </View>
+    );
+  };
+
+  // Task 항목 렌더링
+  const renderTaskItem = ({ item }) => <SwipeableTaskItem item={item} />;
 
   return (
     <View style={styles.overlay}>
@@ -172,6 +279,17 @@ const TaskDetailModal = ({ selectedDate, tasks, onClose }) => {
           onCancel={onCancelDelete}
         />
       </Modal>
+
+      {/* Task 완료 코인 모달 */}
+      <TaskCompleteCoinModal
+        isVisible={isCoinModalVisible}
+        onClose={() => {
+          setIsCoinModalVisible(false);
+          setCompletedTask(null);
+        }}
+        taskText={completedTask?.text}
+        earnedCoins={10}
+      />
     </View>
   );
 };
@@ -213,6 +331,32 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 10,
   },
+  swipeContainer: {
+    marginBottom: 10,
+    overflow: 'hidden',
+    borderRadius: 10,
+  },
+  swipeActions: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 120,
+  },
+  swipeAction: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editAction: {
+    backgroundColor: Colors.accentApricot,
+  },
+  deleteAction: {
+    backgroundColor: '#FF6B6B',
+  },
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -220,7 +364,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,

@@ -43,15 +43,17 @@ const TaskCalendarScreen = () => {
   // 임시 Task 데이터 (실제로는 백엔드에서 가져옴)
   const mockTasks = {
     '2025-07-20': [ // 오늘 날짜 예시
-      { id: 't1', text: '오전 운동', completed: false, category: '운동', color: '#FFABAB' },
-      { id: 't2', text: 'FIVLO 앱 개발', completed: false, category: '공부', color: '#99DDFF' },
+      { id: 't1', text: t('task_calendar.sample_tasks.water'), completed: false, category: t('task_calendar.categories.daily'), color: Colors.primaryBeige, isDailyRepeat: true, isAlbumLinked: false },
+      { id: 't2', text: t('task_calendar.sample_tasks.morning_exercise'), completed: false, category: t('task_calendar.categories.exercise'), color: '#FFABAB', isDailyRepeat: false, isAlbumLinked: true },
+      { id: 't3', text: t('task_calendar.sample_tasks.app_dev'), completed: false, category: t('task_calendar.categories.study'), color: '#99DDFF', isDailyRepeat: false, isAlbumLinked: false },
     ],
     '2025-07-21': [
-      { id: 't3', text: '점심 식사', completed: true, category: '일상', color: '#FFD1DC' },
+      { id: 't4', text: t('task_calendar.sample_tasks.lunch'), completed: true, category: t('task_calendar.categories.daily'), color: Colors.primaryBeige, isDailyRepeat: true, isAlbumLinked: false },
+      { id: 't5', text: t('task_calendar.sample_tasks.dinner'), completed: false, category: t('task_calendar.categories.daily'), color: Colors.primaryBeige, isDailyRepeat: true, isAlbumLinked: false },
     ],
     '2025-07-25': [
-      { id: 't4', text: '보고서 작성', completed: false, category: '업무', color: '#C3A0FF' },
-      { id: 't5', text: '미팅 준비', completed: false, category: '업무', color: '#C3A0FF' },
+      { id: 't6', text: t('task_calendar.sample_tasks.report'), completed: false, category: t('task_calendar.categories.work'), color: '#C3A0FF', isDailyRepeat: false, isAlbumLinked: false },
+      { id: 't7', text: t('task_calendar.sample_tasks.meeting_prep'), completed: false, category: t('task_calendar.categories.work'), color: '#C3A0FF', isDailyRepeat: false, isAlbumLinked: false },
     ],
   };
 

@@ -12,11 +12,13 @@ import { FontSizes, FontWeights } from '../../styles/Fonts'; // <-- 사용자님
 import Header from '../../components/common/Header';
 import Button from '../../components/common/Button';
 import CharacterImage from '../../components/common/CharacterImage';
+import { useTranslation } from 'react-i18next';
 
 const TimeAttackCompleteScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const { selectedGoal } = route.params;
 
@@ -32,15 +34,15 @@ const TimeAttackCompleteScreen = () => {
 
   return (
     <View style={[styles.screenContainer, { paddingTop: insets.top + 20 }]}>
-      <Header title="타임어택 기능" showBackButton={true} />
+      <Header title={t('headers.time_attack')} showBackButton={true} />
 
       <View style={styles.contentContainer}>
-        <Text style={styles.completeText}>완료 준비 완료!</Text>
-        <Text style={styles.praiseText}>오분이가 칭찬합니다 ~</Text>
+        <Text style={styles.completeText}>{t('time_attack_complete.complete_ready')}</Text>
+        <Text style={styles.praiseText}>{t('time_attack_complete.praise_message')}</Text>
         
         <CharacterImage style={styles.obooniCharacter} />
         
-        <Button title="홈화면으로" onPress={handleGoToHome} style={styles.homeButton} />
+        <Button title={t('time_attack_complete.go_home')} onPress={handleGoToHome} style={styles.homeButton} />
       </View>
     </View>
   );

@@ -111,7 +111,7 @@ const AnalysisGraphScreen = () => {
 
   const handleDDayTabPress = () => {
     if (!isPremiumUser) {
-      Alert.alert(t('analysis.premium_title'), t('analysis.premium_message'));
+      navigation.navigate('PremiumMembership');
     } else {
       setActiveTab('dday');
     }

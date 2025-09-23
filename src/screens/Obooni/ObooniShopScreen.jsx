@@ -51,7 +51,7 @@ const ObooniShopScreen = ({ isPremiumUser }) => {
 
   const handlePurchaseAttempt = (item) => {
     if (!isPremiumUser) {
-      Alert.alert(t('obooni.premium_title'), t('obooni.premium_message'));
+      navigation.navigate('PremiumMembership');
       return;
     }
 

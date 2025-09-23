@@ -6,8 +6,8 @@ const useAuthStore = create((set) => ({
   userToken: null,
   userPurpose: null,
   
-  // ✨ [수정] isPremiumUser 상태를 추가하고 기본값을 true로 설정하여 모든 사용자를 프리미엄으로 간주합니다.
-  isPremiumUser: true, 
+  // ✨ [수정] isPremiumUser 상태를 추가하고 기본값을 false로 설정하여 프리미엄 기능 테스트를 가능하게 합니다.
+  isPremiumUser: false, 
 
   setUserToken: (token) => set({ userToken: token }),
   setUserPurpose: (purpose) => set({ userPurpose: purpose }),

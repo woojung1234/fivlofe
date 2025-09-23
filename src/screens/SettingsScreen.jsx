@@ -106,11 +106,7 @@ const SettingsScreen = ({ initialIsPremiumUser = true }) => {
             <FontAwesome5 name="chevron-right" size={16} color={Colors.secondaryBrown} />
           </TouchableOpacity>
 
-          {/* 신고하기 */}
-          <TouchableOpacity style={[styles.settingItem, { borderBottomWidth: 0 }]} onPress={handleReportPress}>
-            <Text style={styles.settingItemText}>{t('settings.report', '신고하기')}</Text>
-            <FontAwesome5 name="chevron-right" size={16} color={Colors.secondaryBrown} />
-          </TouchableOpacity>
+          
         </View>
       </ScrollView>
     </View>

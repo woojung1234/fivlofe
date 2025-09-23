@@ -22,7 +22,9 @@ import HomeScreen from '../screens/HomeScreen';
 import FeaturesScreen from '../screens/FeaturesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import Header from '../components/common/Header';
-import AccountManagementScreen from '../screens/AccountManagementScreen'; // 계정 관리
+import AccountManagementScreen from '../screens/AccountManagementScreen';
+import InformationScreen from '../screens/InformationScreen';
+import PremiumMembershipScreen from '../screens/PremiumMembershipScreen'; // 계정 관리
 
 // 3. Task (할 일)
 import TaskCalendarScreen from '../screens/Task/TaskCalendarScreen';
@@ -223,8 +225,8 @@ const AppNavigator = () => {
         <Stack.Screen name="ObooniShop" component={ObooniShopScreen} />
 
         <Stack.Screen name="ProfileSettings" component={TempScreen} />
-        <Stack.Screen name="PremiumMembership" component={TempScreen} />
-        <Stack.Screen name="Information" component={TempScreen} />
+        <Stack.Screen name="PremiumMembership" component={PremiumMembershipScreen} />
+        <Stack.Screen name="Information" component={InformationScreen} />
         <Stack.Screen name="Report" component={TempScreen} />
 
       </Stack.Navigator>

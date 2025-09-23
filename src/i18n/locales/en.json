@@ -24,6 +24,26 @@
     "language_english": "English",
     "language_korean": "Korean"
   },
+  "information": {
+    "title": "Information",
+    "terms_of_use": "Terms of Use",
+    "privacy_policy": "Privacy Policy",
+    "version": "Version",
+    "link_error_title": "Link Error",
+    "link_error_message": "Cannot open {{title}} page."
+  },
+  "premium": {
+    "title": "FIVLO Premium Features",
+    "main_message": "Increase your concentration with Obuni!",
+    "one_month": "1 month",
+    "twelve_months": "12 months",
+    "available_features": "Available Features",
+    "feature_gps": "GPS location-based forgetfulness prevention system",
+    "feature_dday": "D-Day goal concentration analysis",
+    "feature_ai": "AI one-liner using concentration analysis data",
+    "feature_customization": "Automi customization and coin reward system",
+    "preparing_message": "Oh~!! It's still being prepared."
+  },
   "alerts": {
     "navigate": "Navigate",
     "move_to_page": "Move to {{name}} page.",
@@ -375,11 +395,12 @@
     "save_confirm_message": "Profile information has been saved.",
     "logout_confirm_title": "Logout",
     "logout_confirm_message": "Are you sure you want to log out?",
-    "delete_confirm_title": "Delete Account",
-    "delete_confirm_message": "Are you sure you want to delete your account? All data will be permanently deleted and cannot be recovered.",
+    "delete_confirm_title": "Are you sure you want to delete your account?",
+    "delete_confirm_message": "It's such a pity..",
+    "delete_confirm_submessage": "If you withdraw as a member, all created routines and albums will disappear.",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete Account"
   },
   "task_detail": {
     "delete_confirm_yes": "Yes",

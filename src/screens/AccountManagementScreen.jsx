@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/common/Header';
 import Button from '../components/common/Button';
+import AccountDeleteModal from '../components/common/AccountDeleteModal';
 import { Colors } from '../styles/color';
 import { FontSizes, FontWeights } from '../styles/Fonts';
 
@@ -17,6 +18,7 @@ const AccountManagementScreen = () => {
   const { t } = useTranslation();
 
   const [name, setName] = useState('오분이');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // ✨ 수정: 저장 버튼 클릭 시 Alert을 띄운 후, 확인을 누르면 이전 화면으로 돌아갑니다.
   const handleSave = () => {
@@ -39,14 +41,16 @@ const AccountManagementScreen = () => {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      t('account.delete_confirm_title'),
-      t('account.delete_confirm_message'),
-      [
-        { text: t('account.cancel'), style: 'cancel' },
-        { text: t('account.delete'), onPress: () => navigation.dispatch(StackActions.replace('AuthChoice')), style: 'destructive' },
-      ]
-    );
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setShowDeleteModal(false);
+    navigation.dispatch(StackActions.replace('AuthChoice'));
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
   };
 
   return (
@@ -88,6 +92,13 @@ const AccountManagementScreen = () => {
       <View style={styles.saveButtonContainer}>
         <Button title={t('account.save')} onPress={handleSave} />
       </View>
+      
+      {/* 회원 탈퇴 모달 */}
+      <AccountDeleteModal
+        visible={showDeleteModal}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </View>
   );
 };

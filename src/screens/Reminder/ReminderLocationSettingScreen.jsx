@@ -42,7 +42,7 @@ const ReminderLocationSettingScreen = () => {
       navigation.goBack();
     } catch (error) {
       console.error('위치 저장 실패:', error);
-      Alert.alert(t('reminder.error_title'), t('reminder.location_save_failed'));
+      Alert.alert('오류', '위치 저장에 실패했습니다.');
     }
   };
 
